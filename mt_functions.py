@@ -56,6 +56,52 @@ def import_gff_data(contig_list, feature):
         feature_dict[i] = feature_annotation
     return feature_dict
 
+def import_intergene_coordinates(gene_annotation, contig_sequence_dict):
+
+    intergene_annotation = {}
+    for i in gene_annotation:
+        start = gene_annotation[i][0]
+        end = gene_annotation[i][1]
+        intergene_start = []
+        intergene_end = []
+        if len(start) > 0:
+            for j in range(len(start)):
+                if j == 0:
+                    if int(start[j]) > 1: # therefore must be a 5-prime intergenic region
+                        print("start intergenic (5-prime):", 1, "end intergenic (5-prime):", int(start[j])-1)
+                        intergene_start.append(1)
+                        intergene_end.append(int(start[j])-1)
+                    print ("start gene (first gene):", start[j], "end gene (first gene):", end[j])
+                    if len(start) > 1: # therefore must be more than 1 gene on contig
+                        if int(start[j+1]) > int(end[j])+1: # check that there is actually an intergenic region between genes
+                            print("start intergenic:", int(end[j])+1, "end intergenic:", int(start[j+1])-1)
+                            intergene_start.append(int(end[j])+1)
+                            intergene_end.append(int(start[j+1])-1)
+                    if len(start) == 1: # therefore must be only 1 gene on contig
+                        if len(contig_sequence_dict[i]) > int(end[j]):
+                            print("start intergenic (3-prime):", int(end[j])+1, "end intergenic (3-prime):", len(contig_sequence_dict[i]))
+                            intergene_start.append(int(end[j])+1)
+                            intergene_end.append(len(contig_sequence_dict[i]))
+                elif j == len(start)-1:
+                    print("start gene (last gene):", start[j], "end gene (last gene):", end[j])
+                    if len(contig_sequence_dict[i]) > int(end[j]):
+                        print("start intergenic (3-prime):", int(end[j])+1, "end intergenic (3-prime):", len(contig_sequence_dict[i]))
+                        intergene_start.append(int(end[j])+1)
+                        intergene_end.append(len(contig_sequence_dict[i]))
+                elif len(start) > 1:
+                    print("start gene (middle gene):", start[j], "end gene (middle gene):", end[j])
+                    if len(contig_sequence_dict[i]) > int(end[j]):
+                        if int(start[j+1]) > int(end[j])+1: # check that there is actually an intergenic region between genes
+                            print("start intergenic (middle):", int(end[j])+1, "end intergenic (middle):", int(start[j+1])-1)
+                            intergene_start.append(int(end[j])+1)
+                            intergene_end.append(int(start[j+1])-1)
+        else:
+            print("start intergenic (no genes):", 1, "end intergenic (no genes):", len(contig_sequence_dict[i]))
+            intergene_start.append(1)
+            intergene_end.append(len(contig_sequence_dict[i]))
+        intergene_annotation[i] = [intergene_start, intergene_end]
+    return intergene_annotation
+
 def get_coordinates(sequence_dict, subsequence):
 
     '''a function that loops through the nucleotides of a given sequence and returns the start and end coordinates'''

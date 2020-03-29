@@ -3,7 +3,7 @@
 import matplotlib.pyplot as plt
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
-from mp_functions import *
+from mt_functions import *
 
 ### CREATE A CONTIG SEQUENCE DICTIONARY ###
 
@@ -12,63 +12,32 @@ from mp_functions import *
 #contig.size = # numerical value
 #contig.gc # gc content
 
+path_to_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/200305/coverageStatsTest"
+cx_report = "adultCombined.CX_report.txt"
+sample_CX_data_file = path_to_data+"/"+cx_report
+fasta = "GCF_002156985.1_Harm_1.0_genomic.fa"
+gff = "GCF_002156985.1_Harm_1.0_genomic.gff"
+
 contig_list = ["NC_014668.1","NW_018396379.1","NW_018396386.1","NW_018396377.1","NW_018396384.1"]
+
 contig_sequence_dict = import_contig_sequence(contig_list)
+
 print(len(contig_sequence_dict), "contigs to be analysed!")
 
-gene_annotation = import_gff_data(contig_list)
+for i in contig_sequence_dict:
+    print(i,"\t", contig_sequence_dict[i][0:101]) # print first 100 nucleotides of each contig
 
-contig_sequence_dict = get_cpg_coordinates(contig_list)
+gene_annotation = import_gff_data(contig_list, "gene")
+
+intergene_annotation = import_intergene_coordinates(gene_annotation) # find non genic coordinates in gff format (1-based)
+
+adult_combined_methylation_dict = import_methylation_data(contig_list, sample_CX_data_file)
+
+cpg_coordinates = get_coordinates(contig_sequence_dict, "CG")
 # check that it works!
-contig_sequence_dict["NC_014668.1"][cpg_coordinates["NC_014668.1"][0][2]:cpg_coordinates["NC_014668.1"][1][2]]
-
-# find non genic coordinates in gff format (i.e. 1-based)
-
-intergene_annotation = {}
-for i in gene_annotation:
-    start = gene_annotation[i][0]
-    end = gene_annotation[i][1]
-    intergene_start = []
-    intergene_end = []
-    if len(start) > 0:
-        for j in range(len(start)):
-            if j == 0:
-                if int(start[j]) > 1: # therefore must be a 5-prime intergenic region
-                    print("start intergenic (5-prime):", 1, "end intergenic (5-prime):", int(start[j])-1)
-                    intergene_start.append(1)
-                    intergene_end.append(int(start[j])-1)
-                print ("start gene (first gene):", start[j], "end gene (first gene):", end[j])
-                if len(start) > 1: # therefore must be more than 1 gene on contig
-                    if int(start[j+1]) > int(end[j])+1: # check that there is actually an intergenic region between genes
-                        print("start intergenic:", int(end[j])+1, "end intergenic:", int(start[j+1])-1)
-                        intergene_start.append(int(end[j])+1)
-                        intergene_end.append(int(start[j+1])-1)
-                if len(start) == 1: # therefore must be only 1 gene on contig
-                    if len(contig_sequence_dict[i]) > int(end[j]):
-                        print("start intergenic (3-prime):", int(end[j])+1, "end intergenic (3-prime):", len(contig_sequence_dict[i]))
-                        intergene_start.append(int(end[j])+1)
-                        intergene_end.append(len(contig_sequence_dict[i]))
-            elif j == len(start)-1:
-                print("start gene (last gene):", start[j], "end gene (last gene):", end[j])
-                if len(contig_sequence_dict[i]) > int(end[j]):
-                    print("start intergenic (3-prime):", int(end[j])+1, "end intergenic (3-prime):", len(contig_sequence_dict[i]))
-                    intergene_start.append(int(end[j])+1)
-                    intergene_end.append(len(contig_sequence_dict[i]))
-            elif len(start) > 1:
-                print("start gene (middle gene):", start[j], "end gene (middle gene):", end[j])
-                if len(contig_sequence_dict[i]) > int(end[j]):
-                    if int(start[j+1]) > int(end[j])+1: # check that there is actually an intergenic region between genes
-                        print("start intergenic (middle):", int(end[j])+1, "end intergenic (middle):", int(start[j+1])-1)
-                        intergene_start.append(int(end[j])+1)
-                        intergene_end.append(int(start[j+1])-1)
-    else:
-        print("start intergenic (no genes):", 1, "end intergenic (no genes):", len(contig_sequence_dict[i]))
-        intergene_start.append(1)
-        intergene_end.append(len(contig_sequence_dict[i]))
-    intergene_annotation[i] = [intergene_start, intergene_end]
+# contig_sequence_dict["NC_014668.1"][cpg_coordinates["NC_014668.1"][0][2]:cpg_coordinates["NC_014668.1"][1][2]]
 
 # extract gene stats (i.e. size, cpg count, cpg percent, cpg coordinates)
-
 gene_cpg_count_dict = {}
 gene_cpg_coords_dict = {}
 gene_size_dict = {}
@@ -103,13 +72,11 @@ for i in contig_sequence_dict:
 #contig.annotation = # gene annotation, CpG islands etc
 
 ### CREATE A FEATURE OBJECT (INHERIT FROM CONTIG) ###
-
 #feature.type
 #feature.start
 #feature.end
 
 ### CREATE A GENE OBJECT (INHERIT FROM FEATURE) ###
-
 #gene.start = # start
 #gene.end = # end
 #gene.tss =  # transcription start site
@@ -118,12 +85,9 @@ for i in contig_sequence_dict:
 #gene.annotation = # exons, introns
 
 ### CREATE A SAMPLE OBJECT ###
-
 #sample.methylation_coordinates
 #sample.sequence_map
 #sample.coverage
-
-adult_combined_methylation = import_methylation_data(contig_list, sample_data_file)
 
 #### CALCULATE METHYLATION STATS FOR EACH CONTIG ########
 
@@ -133,7 +97,7 @@ for i in contig_list:
     cumulative_methylated = 0
     cumulative_unmethylated = 0
     for j in gene_cpg_coords_dict[i]:
-        for k in j: 
+        for k in j:
             coordinate = adult_combined_methylation_dict[i][0][adult_combined_methylation_dict[i][0].index(k)]
             methylated = adult_combined_methylation_dict[i][2][adult_combined_methylation_dict[i][0].index(k)]
             cumulative_methylated += adult_combined_methylation_dict[i][2][adult_combined_methylation_dict[i][0].index(k)]
