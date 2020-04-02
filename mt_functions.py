@@ -1,3 +1,10 @@
+def import_contig_list(text_file):
+    text_file_handle = open(text_file, "r")
+    contig_list = []
+    for i in text_file_handle:
+        contig_name = i.strip()
+        contig_list.append(contig_name)
+
 def import_contig_sequence(contig_list):
 
     '''a function that returns a dictionary of contig sequences given a name or list of names'''
@@ -144,7 +151,11 @@ def import_methylation_data(contig_list, sample_CX_data_file):
     methylated_coords_data_handle.close()
     methylated_coords_data_dict = {} # this is where the methylation data for a given sample will be stored (methylated and unmethylated counts)
 
+    contig_count = 0
+
     for i in contig_list:
+        contig_count += 1
+        print("Processing contig", contig_count)
         coordinate_list = []
         strand_list = []
         methylated_list = []
