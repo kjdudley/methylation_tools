@@ -8,6 +8,7 @@ from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 from mt_functions import *
 from plot_functions import *
+import statistics
 
 ### DEFINE PATHS TO DATA FILES ###
 
@@ -134,53 +135,51 @@ for i in contig_gene_cpg_coords_dict: # contig name
 print(contig_counts_methylation_dict)
 #print(contig_cpg_percent_methylation_dict)
 
-#### CALCULATE GENE METHYLATION STATS FOR EACH CONTIG ########
+contig_gene_cpg_position_methylation_dict = gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict)
 
-contig_counts_methylation_dict = {}
-contig_cpg_percent_methylation_dict = {}
-contig_coordinate_methylation_dict = {}
-required_coverage = 20
-pass_coverage_threshold = 0
-fail_coverage_threshold = 0
+contig_max_cpg_position = {}
+for i in contig_gene_cpg_position_methylation_dict:
+    max_cpg_position = 0
+    for j in contig_gene_cpg_position_methylation_dict[i]:
+        if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
+            if max(contig_gene_cpg_position_methylation_dict[i][j][3]) > max_cpg_position:
+                max_cpg_position = max(contig_gene_cpg_position_methylation_dict[i][j][3])
+    contig_max_cpg_position[i] = max_cpg_position
 
-for i in contig_list:
-    print(i)
-    contig_coordinate = []
-    contig_percent_data = []
-    cumulative_methylated = 0
-    cumulative_unmethylated = 0
-    for j in gene_cpg_coords_dict[i]:
-        #print(j)
-        for k in j:
-            coordinate = adult_combined_methylation_dict[i][0][adult_combined_methylation_dict[i][0].index(k)]
-            methylated = adult_combined_methylation_dict[i][2][adult_combined_methylation_dict[i][0].index(k)]
-            unmethylated = adult_combined_methylation_dict[i][3][adult_combined_methylation_dict[i][0].index(k)]
-            total = methylated+unmethylated
-            context = adult_combined_methylation_dict[i][4][adult_combined_methylation_dict[i][0].index(k)]
-            if total >= required_coverage:
-                contig_coordinate.append(coordinate)
-                percent = 100*(methylated/total)
-                contig_percent_data.append(percent)
-                cumulative_methylated += adult_combined_methylation_dict[i][2][adult_combined_methylation_dict[i][0].index(k)]
-                cumulative_unmethylated += adult_combined_methylation_dict[i][3][adult_combined_methylation_dict[i][0].index(k)]
-                pass_coverage_threshold += 1
-                print("coordinate:", coordinate, "methylated:", methylated, "total:", total, "percent:", percent, "context:", context)
-            else:
-                fail_coverage_threshold += 1
-    contig_cpg_percent_methylation_dict[i] = contig_percent_data
-    totals_data = [cumulative_methylated, cumulative_unmethylated]
-    #print("cumulative percent calculation 1:", 100*(cumulative_methylated/(cumulative_methylated+cumulative_unmethylated)))
-    contig_counts_methylation_dict[i] = totals_data
-    if cumulative_methylated+cumulative_unmethylated > 0: # discounts contigs without any CpG's that pass the threshold!
-        print(100*(pass_coverage_threshold/(pass_coverage_threshold+fail_coverage_threshold)), "percent of CpG dinucleotides pass coverage threshold!")
-        print("Total methylated CpG's:  ", cumulative_methylated)
-        print("Total unmethylated CpG's:", cumulative_unmethylated)
-        print("Overall CpG methylation for passing CpG dinucleotides is", 100*(cumulative_methylated/(cumulative_methylated+cumulative_unmethylated)))
-    else:
-        print("No data for this contig!")
+contig_min_cpg_position = {}
+for i in contig_gene_cpg_position_methylation_dict:
+    min_cpg_position = contig_max_cpg_position[i]
+    for j in contig_gene_cpg_position_methylation_dict[i]:
+        if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
+            if min(contig_gene_cpg_position_methylation_dict[i][j][3]) < min_cpg_position:
+                min_cpg_position = min(contig_gene_cpg_position_methylation_dict[i][j][3])
+    contig_min_cpg_position[i] = min_cpg_position
 
-print(contig_counts_methylation_dict)
-#print(contig_cpg_percent_methylation_dict)
+position_percent_cpg_list_dict = {}
+for i in range(0, max(contig_max_cpg_position.values())+1):
+    position_percent_cpg_list_dict[i] = []
+
+for i in contig_gene_cpg_position_methylation_dict:
+    for j in contig_gene_cpg_position_methylation_dict[i]:
+        if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
+            #print("TRUE")
+            for k in range(len(contig_gene_cpg_position_methylation_dict[i][j][3])):
+                #print(len(contig_gene_cpg_position_methylation_dict[i][j][3]))
+                print("position:", contig_gene_cpg_position_methylation_dict[i][j][3][k], "percent:", contig_gene_cpg_position_methylation_dict[i][j][4][k])
+                position_list = position_percent_cpg_list_dict[contig_gene_cpg_position_methylation_dict[i][j][3][k]]
+                position_list.append(contig_gene_cpg_position_methylation_dict[i][j][4][k])
+                position_percent_cpg_list_dict[contig_gene_cpg_position_methylation_dict[i][j][3][k]] = position_list
+
+position_length = []
+for i in position_percent_cpg_list_dict:
+     position_length.append(len(position_percent_cpg_list_dict[i]))
+
+position_median_percent = []
+for i in position_percent_cpg_list_dict:
+   if len(position_percent_cpg_list_dict[i]) > 0:
+      position_median_percent.append(statistics.median(position_percent_cpg_list_dict[i]))
+   else:
+      position_median_percent.append(-1)
 
 ### PLOT DATA ###
 
@@ -209,7 +208,6 @@ for i in contig_cpg_percent_methylation_dict:
     hist_data.append(name)
 
 # create bins
-
 bin = []
 for i in range(0,101):
     bin.append(i)
@@ -228,239 +226,16 @@ counted = count_elements(binned_values)
 # create histogram
 ascii_histogram(binned_values)
 
-#########################################################
+## Barplots
+plt.clf()
+x = np.arange(len(position_length[0:5000]))
+y = position_length[0:5000]
+plt.bar(x,y)
+plt.savefig("lengthbarplot.png")
+plt.clf()
 
-####### set upstream, downstream, 5prime and 3prime lengths #######
+y = position_median_percent[0:5000]
+plt.bar(x,y)
+plt.savefig("medianbarplot.png")
+plt.clf()
 
-#upstream_length = 1000
-#downstream_length = 1000
-#fiveprime_length = 1000
-#threeprime_length = 1000
-
-####### set total methylation tallys #######
-
-#total_methylated_CpG_tally = {}
-#total_unmethylated_CpG_tally = {}
-#total_upstream_methylated_CpG_tally = {}
-#total_upstream_unmethylated_CpG_tally = {}
-
-#for i in range(1,threeprime_length+1):
-#    total_unmethylated_CpG_tally[i] = 0
-#    total_methylated_CpG_tally[i] = 0
-
-#for i in range(1,upstream_length+1):
-#    total_upstream_methylated_CpG_tally[i] = 0
-#    total_upstream_unmethylated_CpG_tally[i] = 0
-
-# initialize gene number tally to zero
-
-#gene_number = 0
-
-####### loop through contigs #######
-
-#for entry in contig_list: # add indices to restrict to particular contigs in list
-#
-#    print("Contig name:", entry)
-#    contig=open("test_contig_sequence/"+entry+"_sequence.txt", "r") # open the file containing contig sequence
-#    contig_sequence=contig.read() # and save to variable 'contig_sequence'
-#    gene_start=open("test_contig_beds_annotations/"+entry+"_gene_start.txt", 'r') # open file that contains gene start information for specific contig
-#    gene_end=open("test_contig_beds_annotations/"+entry+"_gene_end.txt", 'r') # and the file that contains gene end information
-#    gene_strand=open("test_contig_beds_annotations/"+entry+"_gene_strand.txt", 'r') # and the file that contains strand information
-
-#    gene_start_coordinates=[] # create an empty list to store the gene_start coordinates
-#    gene_end_coordinates=[] # and to store the gene_end_coordinates
-#    gene_strand_designation=[] # and to store the gene strand
-
-#    gene_5prime_CpG_positions={} # make a dictionary to store the CpG coordinates occurring at the start (~ 500 bp) of each gene
-#    gene_3prime_CpG_positions={} # and one to store CpG coordinates occurring at the end (~500 bp) of each gene
-#    upstream_CpG_positions = {} ### initialize upstream CpG dictionary
-
-####### CONTIG DATA EXTRACTION #######
-
-#    contig_CpG_position, contig_GpC_position, contig_CHG_position, contig_CHH_position = find_methylation_sites(contig_sequence)
-
-#    print("CpG count for contig:", len(contig_CpG_position))
-#    print("GC content for contig:",((len(contig_CpG_position)*2)+(len(contig_GpC_position)*2))/len(contig_sequence))
-
-#    for i in gene_start:
-#        i.strip()
-#        gene_start_coordinates.append(int(i)) # store gene_start coordinates
-#    for i in gene_end:
-#        i.strip()
-#        gene_end_coordinates.append(int(i)) # store gene_end coordinates
-#    for i in gene_strand:
-#        designation=i.strip()
-#        gene_strand_designation.append(designation) # store gene_strand
-
-#    print("Number of genes in contig:", len(gene_start_coordinates), "\t", gene_start_coordinates[0:6], "\t", gene_end_coordinates[0:6], "\t", gene_strand_designation[0:6])
-
-#    contig.close()
-#    gene_start.close()
-#    gene_end.close()
-#    gene_strand.close()
-
-####### GENE DATA EXTRACTION #######
-
-#    for i in range(len(gene_start_coordinates)): # loop through each gene in contig
-#        gene_number += 1
-#        print("Processing gene", gene_number)
-        #print("gene start coordinate:", gene_start_coordinates[i], "\t", "gene end coordinate:", gene_end_coordinates[i], "\t", "strand:", gene_strand_designation[i]) # print the start and end coordiantes for this gene
-        #print(contig_sequence[gene_start_coordinates[i]:gene_end_coordinates[i]]) # print the gene sequence
-#        if gene_strand_designation[i]=="+": # if the gene is on the plus strand
-#            gene_sequence = contig_sequence[gene_start_coordinates[i]:gene_end_coordinates[i]] # save the sequence in the orientation found in the contig_sequence variable
-#            if gene_start_coordinates[i]-upstream_length >= 0:
-#                upstream_sequence = contig_sequence[gene_start_coordinates[i]-upstream_length:gene_start_coordinates[i]]
-#            else:
-#                upstream_sequence = contig_sequence[0:gene_start_coordinates[i]]
-#        else:
-#            gene_sequence = Seq(contig_sequence[gene_start_coordinates[i]:gene_end_coordinates[i]], generic_dna).reverse_complement() # or save the reverse complement sequence if the gene is found on the minus strand
-#            if gene_end_coordinates[i]+upstream_length < len(contig_sequence)+1:
-#                upstream_sequence = Seq(contig_sequence[gene_end_coordinates[i]:gene_end_coordinates[i]+upstream_length], generic_dna).reverse_complement()
-#            else:
-#                upstream_sequence = Seq(contig_sequence[gene_end_coordinates[i]:len(contig_sequence)+1], generic_dna).reverse_complement()
-
-
-        ####### Find the CpG, GpC positions in the gene sequence #######
-
-#        CpG_position, GpC_position, CHG_position, CHH_position = find_methylation_sites(gene_sequence)
-
-        ####### Find the CpG, GpC positions in the upstream sequence #######
-
-#        upstream_CpG_position, upstream_GpC_position, upstream_CHG_position, upstream_CHH_position = find_methylation_sites(upstream_sequence)
-
-        ####### Find the CpG, GpC positions in the 5prime and 3prime sequences #######
-
-#        if len(gene_sequence) > fiveprime_length+threeprime_length:
-#            threeprime_CpG_position = find_methylation_sites(gene_sequence[0:threeprime_length+1])
-#        else:
-#            threeprime_CpG_position = []
-#        if len(gene_sequence) > fiveprime_length+threeprime_length:
-#            fiveprime_CpG_position = find_methylation_sites(gene_sequence[len(gene_sequence)-fiveprime_length:len(gene_sequence)+1])
-#        else:
-#            fiveprime_CpG_position = []
-
-        ####### Add the position lists to relevant dictionary #######
-
-#        gene_5prime_CpG_positions[gene_start_coordinates[i]]=fiveprime_CpG_position # add start CpG list to a dictionary with gene start coordinate as key
-#        gene_3prime_CpG_positions[gene_end_coordinates[i]]=threeprime_CpG_position # same as above for end CpG list
-
-#        upstream_CpG_positions[gene_start_coordinates[i]]=upstream_CpG_position
-
-####### Print line in summary table #######
-
-####### DATASET SELECTION #######
-
-### Import the methylation data for the contig ###
-
-#    zero_cov_coordinates = open("input_files/"+entry+"_coordinate.txt","r")
-#    zero_cov_methylated = open("input_files/"+entry+"_methylated.txt","r")
-#    zero_cov_unmethylated = open("input_files/"+entry+"_unmethylated.txt","r")
-
-#    coordinate_list=[]
-#    methylated_list=[]
-#    unmethylated_list=[]
-
-#    for i in zero_cov_coordinates:
-#        coordinate = int(i.strip())
-#        coordinate_list.append(coordinate)
-
-#    for i in zero_cov_methylated:
-#        methylated = int(i.strip())
-#        methylated_list.append(methylated)
-
-#    for i in zero_cov_unmethylated:
-#        unmethylated = int(i.strip())
-#        unmethylated_list.append(unmethylated)
-
-#    zero_cov_coordinates.close()
-#    zero_cov_methylated.close()
-#    zero_cov_unmethylated.close()
-
-#    for i in range(0,10):
-#        print(coordinate_list[i], contig_sequence[i:i+2])
-
-### Split contig methylation data into genes (i.e. gene start coordinate as dictionary key) ###
-
-#    zero_cov_data={}
-
-#    for i in range(len(coordinate_list)):
-#        zero_cov_data[coordinate_list[i]] = [methylated_list[i], unmethylated_list[i]]
-
-#    for i in gene_start_coordinates: # loop through the gene start coordinates for each gene in the contig
-
-#        methylated_CpG_tally = {}
-#        unmethylated_CpG_tally = {}
-#        no_CpG_data=[]
-
-#        upstream_methylated_CpG_tally = {}
-#        upstream_unmethylated_CpG_tally = {}
-#        upstream_no_CpG_data = []
-
-        # initialize methylated and unmethylated tally dictionaries to start at 0 for each position
-
-#        for j in range(1,threeprime_length+1):
-#            unmethylated_CpG_tally[j] = 0
-#        for j in range(1,threeprime_length+1):
-#            methylated_CpG_tally[j] = 0
-#        for j in range(1,upstream_length+1):
-#            upstream_unmethylated_CpG_tally[j] = 0
-#            upstream_methylated_CpG_tally[j] = 0
-
-#        gene_start_coordinate = i # assign gene start coordinate value to variable 'gene_start_coordinate'
-#        coordinate_CpG_positions = gene_5prime_CpG_positions[i]
-
-#        upstream_coordinate_CpG_positions = upstream_CpG_positions[i]
-
-#        for j in coordinate_CpG_positions: # loop through the list of CpG positions
-#            CpG_coordinate = j+gene_start_coordinate # convert position into coordinate
-#            print("coordinate", CpG_coordinate, ":", gene_sequence[j:j+2]) ## check we're hitting CpG's!!!
-#            if CpG_coordinate in coordinate_list:
-#                methylated_CpG_tally[j] += zero_cov_data[CpG_coordinate][0] # add coordinate methylation value to the relevent position tally
-#                unmethylated_CpG_tally[j] += zero_cov_data[CpG_coordinate][1] # add coordinate unmethylation value to the relevant position tally
-#            else:
-#                no_CpG_data.append(j)
-#        for j in upstream_coordinate_CpG_positions:
-#            upstream_CpG_coordinate = (gene_start_coordinate-upstream_length)+j #### CHECK THIS!!! ####
-#            if CpG_coordinate in coordinate_list:
-#                upstream_methylated_CpG_tally[j] += zero_cov_data[CpG_coordinate][0]
-#                upstream_unmethylated_CpG_tally[j] += zero_cov_data[CpG_coordinate][1]
-#            else:
-#                upstream_no_CpG_data.append(j)
-
-        ### Retrieve per gene methylation data metrics ###
-
-#        percent_CpG_methylation_string = ""
-#        CpG_coverage_string = ""
-
-#        for j in range(1,threeprime_length+1):
-#            position_coverage = methylated_CpG_tally[j]+unmethylated_CpG_tally[j]
-#            if methylated_CpG_tally[j] > 0:
-#                percent_methylation = 100*(methylated_CpG_tally[j]/position_coverage)
-#            else:
-#                percent_methylation = 0
-#            percent_CpG_methylation_string = percent_CpG_methylation_string+str(percent_methylation)+"\t"
-#            CpG_coverage_string = CpG_coverage_string+str(position_coverage)+"\t"
-
-#        methylation_output.write(entry+"_"+str(i)+"\t"+percent_CpG_methylation_string+"\n")
-#        coverage_output.write(entry+"_"+str(i)+"\n"+CpG_coverage_string+"\n")
-
-        ### Retrieve per gene dictionary data ###
-
-#        for i in methylated_CpG_tally:
-#            total_methylated_CpG_tally[i] += methylated_CpG_tally[i]
-
-#        for i in unmethylated_CpG_tally:
-#            total_unmethylated_CpG_tally[i] += unmethylated_CpG_tally[i]
-
-        ### Retrieve upstream per gene dictionary data ###
-
-#        for i in upstream_unmethylated_CpG_tally:
-#            total_upstream_unmethylated_CpG_tally[i] += upstream_unmethylated_CpG_tally[i]
-
-#        for i in upstream_methylated_CpG_tally:
-#            total_upstream_methylated_CpG_tally[i] += upstream_methylated_CpG_tally[i]
-
-#print("total methylated CpG tally:", total_methylated_CpG_tally)
-#print("total unmethylated CpG tally:", total_unmethylated_CpG_tally)
-#print("total upstream methylated CpG tally:", total_upstream_methylated_CpG_tally)
-#print("total upstream unmethylated CpG tally:", total_upstream_unmethylated_CpG_tally)

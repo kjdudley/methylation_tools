@@ -175,3 +175,59 @@ def import_methylation_data(contig_list, sample_CX_data_file):
         methylated_coords_data_dict[i] = data_list
 
     return methylated_coords_data_dict
+
+def contig_to_gene(contig_cpg_coordinate_dict, gene_annotation):
+
+    contig_gene_cpg_coordinate_methylation_dict = {}
+
+    for i in contig_cpg_coordinate_dict:
+        print(i)
+        gene_cpg_coordinate_dict = {}
+        for j in range(len(gene_annotation[i][0])):
+            start = gene_annotation[i][0][j]
+            end = gene_annotation[i][1][j]
+            strand = gene_annotation[i][2][j]
+            coordinate = []
+            percent = []
+            print("Gene start:", gene_annotation[i][0][j], "Gene end:", gene_annotation[i][1][j], "Gene strand:", gene_annotation[i][2][j])
+            for k in contig_cpg_coordinate_dict[i]:
+                if k >= int(gene_annotation[i][0][j]) and k <= int(gene_annotation[i][1][j]):
+                    coordinate.append(k)
+                    percent.append(contig_cpg_percent_methylation_dict[i][contig_cpg_coordinate_dict[i].index(k)])
+                    print("coordinate:", k, "percent:", contig_cpg_percent_methylation_dict[i][contig_cpg_coordinate_dict[i].index(k)])
+            gene_cpg_coordinate_dict[i+"."+start] = [int(start), int(end), strand, coordinate, percent]
+        contig_gene_cpg_coordinate_methylation_dict[i] = gene_cpg_coordinate_dict
+    return contig_gene_cpg_coordinate_methylation_dict 
+
+def gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict):
+
+    contig_gene_cpg_position_methylation_dict = {}
+
+    for i in contig_gene_cpg_coordinate_methylation_dict:
+        gene_dict = {}
+        for j in contig_gene_cpg_coordinate_methylation_dict[i]:
+            print(contig_gene_cpg_coordinate_methylation_dict[i][j][0], contig_gene_cpg_coordinate_methylation_dict[i][j][1], contig_gene_cpg_coordinate_methylation_dict[i][j][2])
+            strand = contig_gene_cpg_coordinate_methylation_dict[i][j][2]
+            start = contig_gene_cpg_coordinate_methylation_dict[i][j][0]
+            end = contig_gene_cpg_coordinate_methylation_dict[i][j][1]
+            length = end-start
+            print(length)
+            cpg_position = []
+            cpg_percent = []
+            for k in range(len(contig_gene_cpg_coordinate_methylation_dict[i][j][3])): # scroll through coordinates for given gene
+                if strand == "+":
+                    position = contig_gene_cpg_coordinate_methylation_dict[i][j][3][k]-start
+                    percent = contig_gene_cpg_coordinate_methylation_dict[i][j][4][k]
+                    cpg_position.append(position)
+                    cpg_percent.append(percent)
+                elif strand == "-":
+                    #print("position =", length, "- (", contig_gene_cpg_coordinate_methylation_dict[i][j][3][k], "-", start, ")")
+                    position = length-(contig_gene_cpg_coordinate_methylation_dict[i][j][3][k]-start) # flip positions around
+                    percent = contig_gene_cpg_coordinate_methylation_dict[i][j][4][k]
+                    cpg_position.append(position)
+                    cpg_percent.append(percent)
+                else:
+                    print("Error!")
+            gene_dict[j] = [strand, start, end, cpg_position, cpg_percent]
+        contig_gene_cpg_position_methylation_dict[i] = gene_dict
+    return contig_gene_cpg_position_methylation_dict
