@@ -1,9 +1,10 @@
-def import_contig_list(text_file):
-    text_file_handle = open(text_file, "r")
+def import_contig_list(text_file_path):
     contig_list = []
-    for i in text_file_handle:
-        contig_name = i.strip()
-        contig_list.append(contig_name)
+    with open(text_file_path, "r") as text_file:
+        for i in text_file:
+            contig_name = i.strip()
+            contig_list.append(contig_name)
+    return contig_list
 
 def import_contig_sequence(contig_list):
 
@@ -65,6 +66,9 @@ def import_gff_data(contig_list, feature):
 
 def import_intergene_coordinates(gene_annotation, contig_sequence_dict):
 
+    """a function that returns a dictionary containg a list of start coordinates
+    and a list of end coordinates for non genic regions (i.e. intergenic regions)"""
+
     intergene_annotation = {}
     for i in gene_annotation:
         start = gene_annotation[i][0]
@@ -111,7 +115,8 @@ def import_intergene_coordinates(gene_annotation, contig_sequence_dict):
 
 def get_coordinates(sequence_dict, subsequence):
 
-    '''a function that loops through the nucleotides of a given sequence and returns the start and end coordinates'''
+    '''a function that loops through the nucleotides of a given sequence and returns the start
+    and end coordinates of any occurence of a subsequence'''
 
     coordinate_dict = {}
     for i in sequence_dict:
@@ -176,33 +181,209 @@ def import_methylation_data(contig_list, sample_CX_data_file):
 
     return methylated_coords_data_dict
 
-def contig_to_gene(contig_cpg_coordinate_dict, gene_annotation):
-
-    contig_gene_cpg_coordinate_methylation_dict = {}
-
+def get_feature_stats(contig_cpg_coordinate_dict, contig_feature_coordinate_dict, contig_sequence_dict):
+    """extract gene stats (i.e. size, cpg count, cpg percent, cpg coordinates)"""
+    contig_feature_stats_dict = {}
     for i in contig_cpg_coordinate_dict:
         print(i)
-        gene_cpg_coordinate_dict = {}
-        for j in range(len(gene_annotation[i][0])):
-            start = gene_annotation[i][0][j]
-            end = gene_annotation[i][1][j]
-            strand = gene_annotation[i][2][j]
+        number_of_cpg = []
+        cpg_coord = []
+        feature_cpg_coord_dict = {}
+        size_of_feature = []
+        feature_percent_cpg = [] # i.e proportion of feature made up of CpG dinucleotides
+        for j in range(len(contig_feature_coordinate_dict[i][0])): # loop through features
+            feature_start_coordinate = int(contig_feature_coordinate_dict[i][0][j]) # start coordinate
+            feature_end_coordinate = int(contig_feature_coordinate_dict[i][1][j]) # end coordinate
+            feature_cpg_count = 0
+            feature_cpg_coord = []
+            for k in range(len(contig_cpg_coordinate_dict[i][0])):
+                if int(contig_cpg_coordinate_dict[i][0][k]) <= feature_end_coordinate:
+                    if int(contig_cpg_coordinate_dict[i][0][k]) >= feature_start_coordinate:
+                        feature_cpg_count += 1
+                        feature_cpg_coord.append(contig_cpg_coordinate_dict[i][0][k])
+                        print(i,"\t",contig_cpg_coordinate_dict[i][0][k],"\t", contig_sequence_dict[i][contig_cpg_coordinate_dict[i][0][k]:contig_cpg_coordinate_dict[i][1][k]])
+            number_of_cpg.append(feature_cpg_count)
+            cpg_coord.append(feature_cpg_coord)
+            feature_cpg_coord_dict[feature_start_coordinate] = feature_cpg_coord
+            size_of_feature.append(feature_end_coordinate-(feature_start_coordinate-1))
+            if feature_end_coordinate-feature_start_coordinate > 0:
+                feature_percent_cpg.append(100*(feature_cpg_count/(feature_end_coordinate-feature_start_coordinate)))
+            print("feature_cpg_count:", feature_cpg_count)
+        feature_stats = [feature_cpg_coord_dict, number_of_cpg, size_of_feature, feature_percent_cpg]
+        contig_feature_stats_dict[i] = feature_stats
+    return contig_feature_stats_dict
+
+def get_sample_methylation_stats(sample_methylation_dict, required_coverage, context):
+    contig_sample_methylation_stats_dict = {}
+    contig_count = 0
+    for i in sample_methylation_dict: # contig name
+        contig_count += 1
+        print("Processing contig", contig_count, "Contig name:", i)
+        contig_coordinate = []
+        contig_percent_data = []
+        contig_methylated_count_data = []
+        contig_unmethylated_count_data = []
+        contig_cumulative_methylated = 0
+        contig_cumulative_unmethylated = 0
+        contig_pass_coverage_threshold = 0
+        contig_fail_coverage_threshold = 0
+        for j in range(len(sample_methylation_dict[i][0])):
+            if sample_methylation_dict[i][4][j] == context: # remove "and sample_methylation_dict[i][1][j] == '+'"
+                coordinate = sample_methylation_dict[i][0][j]
+                methylated = sample_methylation_dict[i][2][j]
+                unmethylated = sample_methylation_dict[i][3][j]
+                total = methylated+unmethylated
+                context = sample_methylation_dict[i][4][j]
+                if total >= required_coverage:
+                    contig_coordinate.append(coordinate)
+                    contig_methylated_count_data.append(methylated)
+                    contig_unmethylated_count_data.append(unmethylated)
+                    percent = 100*(methylated/total)
+                    contig_percent_data.append(percent)
+                    contig_cumulative_methylated += methylated
+                    contig_cumulative_unmethylated += unmethylated
+                    contig_pass_coverage_threshold += 1
+                else:
+                    contig_fail_coverage_threshold += 1
+        contig_cpg_coverage_threshold_list = [contig_pass_coverage_threshold, contig_fail_coverage_threshold]
+        contig_cpg_coordinate_list = contig_coordinate
+        contig_cpg_methylated_count_list = contig_methylated_count_data
+        contig_cpg_unmethylated_count_list = contig_unmethylated_count_data
+        contig_cpg_percent_methylation_list = contig_percent_data
+        contig_totals_data = [contig_cumulative_methylated, contig_cumulative_unmethylated]
+        contig_cpg_counts_methylation_list = contig_totals_data
+        sample_methylation_stats = [contig_cpg_coverage_threshold_list, contig_cpg_counts_methylation_list,  contig_cpg_coordinate_list, contig_cpg_percent_methylation_list, contig_cpg_methylated_count_list, contig_cpg_unmethylated_count_list]
+        contig_sample_methylation_stats_dict[i] = sample_methylation_stats
+        if contig_cumulative_methylated+contig_cumulative_unmethylated > 0: # discounts contigs without any cytosines that pass the threshold!
+            print(100*(contig_pass_coverage_threshold/(contig_pass_coverage_threshold+contig_fail_coverage_threshold)), "percent of", context, "cytosines pass coverage threshold!")
+            print("Total methylated", context+"'s:", contig_cumulative_methylated)
+            print("Total unmethylated", context+"'s:", contig_cumulative_unmethylated)
+            print("Overall methylation percentage for passing", context, "cytosines is", 100*(contig_cumulative_methylated/(contig_cumulative_methylated+contig_cumulative_unmethylated)))
+        else:
+            print("No data for this contig!")
+    return contig_sample_methylation_stats_dict
+
+def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_dict):
+    contig_feature_cpg_coordinate_methylation_dict = {}
+    for i in contig_sample_methylation_stats_dict:
+        coordinate_list = contig_sample_methylation_stats_dict[i][2]
+        percent_list = contig_sample_methylation_stats_dict[i][3]
+        methylated_list = contig_sample_methylation_stats_dict[i][4] # doesn't exist yet!
+        unmethylated_list = contig_sample_methylation_stats_dict[i][5] # doesn't exist yet!
+        feature_cpg_coordinate_dict = {}
+        for j in range(len(feature_annotation_dict[i][0])): # start coordinate list
+            start = int(feature_annotation_dict[i][0][j])
+            end = int(feature_annotation_dict[i][1][j])
+            if len(feature_annotation_dict[i]) == 3:
+                strand = feature_annotation_dict[i][2][j]
+            else:
+                strand = "."
             coordinate = []
             percent = []
-            print("Gene start:", gene_annotation[i][0][j], "Gene end:", gene_annotation[i][1][j], "Gene strand:", gene_annotation[i][2][j])
-            for k in contig_cpg_coordinate_dict[i]:
-                if k >= int(gene_annotation[i][0][j]) and k <= int(gene_annotation[i][1][j]):
-                    coordinate.append(k)
-                    percent.append(contig_cpg_percent_methylation_dict[i][contig_cpg_coordinate_dict[i].index(k)])
-                    print("coordinate:", k, "percent:", contig_cpg_percent_methylation_dict[i][contig_cpg_coordinate_dict[i].index(k)])
-            gene_cpg_coordinate_dict[i+"."+start] = [int(start), int(end), strand, coordinate, percent]
-        contig_gene_cpg_coordinate_methylation_dict[i] = gene_cpg_coordinate_dict
-    return contig_gene_cpg_coordinate_methylation_dict 
+            methylated = []
+            unmethylated = []
+            print("Start:", start, "End:", end, "Strand:", strand)
+            for k in range(len(coordinate_list)):
+                if coordinate_list[k] >= start and coordinate_list[k] <= end: # i.e. within feature
+                    coordinate.append(coordinate_list[k])
+                    methylated.append(methylated_list[k])
+                    unmethylated.append(unmethylated_list[k])
+                    percent.append(percent_list[k])
+                    print("coordinate:", coordinate_list[k], "percent:", percent_list[k], "methylated:", methylated_list[k], "unmethylated:", unmethylated_list[k])
+            if strand == "+" or strand == "-":
+                feature_cpg_coordinate_dict[i+"."+str(start)] = [start, end, strand, coordinate, percent, methylated, unmethylated]
+            elif strand == ".": # i.e. intergenic region
+                if (end - (start-1))%2 == 0: #i.e. even number
+                    fiveprime_feature_start = start
+                    fiveprime_feature_end = int(start+((end-(start-1))/2))
+                    threeprime_feature_start = int(start+(((end-(start-1))/2)+1))
+                    threeprime_feature_end = end
+                    fiveprime_feature_coordinate = []
+                    threeprime_feature_coordinate = []
+                    fiveprime_feature_methylated = []
+                    threeprime_feature_methylated = []
+                    fiveprime_feature_unmethylated = []
+                    threeprime_feature_unmethylated = []
+                    fiveprime_feature_percent = []
+                    threeprime_feature_percent = []
+                    for l in range(len(coordinate)):
+                        if coordinate[l] >= fiveprime_feature_start and coordinate[l] <= fiveprime_feature_end:
+                            fiveprime_feature_coordinate.append(coordinate[l])
+                            fiveprime_feature_percent.append(percent[l])
+                            fiveprime_feature_methylated.append(methylated[l])
+                            fiveprime_feature_unmethylated.append(unmethylated[l])
+                        elif coordinate[l] >= threeprime_feature_start and coordinate[l] <= threeprime_feature_end:
+                            threeprime_feature_coordinate.append(coordinate[l])
+                            threeprime_feature_percent.append(percent[l])
+                            threeprime_feature_methylated.append(methylated[l])
+                            threeprime_feature_unmethylated.append(unmethylated[l])
+                        else:
+                            print("Coordinate not found!")
+                    feature_cpg_coordinate_dict[i+"."+str(start)] = [[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], [fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
+                else:
+                    fiveprime_feature_start = start
+                    fiveprime_feature_end = int(start+(((end-(start-1))-1)/2))
+                    threeprime_feature_start = int(start+((((end-(start-1))-1)/2)+2)) # plus two instead of 1!
+                    threeprime_feature_end = end
+                    fiveprime_feature_coordinate = []
+                    threeprime_feature_coordinate = []
+                    fiveprime_feature_methylated = []
+                    threeprime_feature_methylated = []
+                    fiveprime_feature_unmethylated = []
+                    threeprime_feature_unmethylated = []
+                    fiveprime_feature_percent = []
+                    threeprime_feature_percent = []
+                    for l in range(len(coordinate)):
+                        if coordinate[l] >= fiveprime_feature_start and coordinate[l] <= fiveprime_feature_end:
+                            fiveprime_feature_coordinate.append(coordinate[l])
+                            fiveprime_feature_percent.append(percent[l])
+                            fiveprime_feature_methylated.append(methylated[l])
+                            fiveprime_feature_unmethylated.append(unmethylated[l])
+                        elif coordinate[l] >= threeprime_feature_start and coordinate[l] <= threeprime_feature_end:
+                            threeprime_feature_coordinate.append(coordinate[l])
+                            threeprime_feature_percent.append(percent[l])
+                            threeprime_feature_methylated.append(methylated[l])
+                            threeprime_feature_unmethylated.append(unmethylated[l])
+                    else:
+                        print("Coordinate not found!")
+                    feature_cpg_coordinate_dict[i+"."+str(start)] = [[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], [fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
+        contig_feature_cpg_coordinate_methylation_dict[i] = feature_cpg_coordinate_dict
+    return contig_feature_cpg_coordinate_methylation_dict
 
-def gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict):
+def add_upstream_downstream_regions(contig_gene_cpg_coordinate_methylation_dict, contig_intergene_cpg_coordinate_methylation_dict):
+    contig_gene_and_flanking_sequences_cpg_coordinate_methylation_dict = {}
+    for i in contig_gene_cpg_coordinate_methylation_dict:
+        gene_and_flanking_sequences_cpg_coordinate_methylation_dict = {}
+        for j in contig_gene_cpg_coordinate_methylation_dict[i]:
+            gene_coordinate_list = contig_gene_cpg_coordinate_methylation_dict[i][j][3]
+            gene_percent_list = contig_gene_cpg_coordinate_methylation_dict[i][j][4]
+            gene_methylated_list = contig_gene_cpg_coordinate_methylation_dict[i][j][5]
+            gene_unmethylated_list = contig_gene_cpg_coordinate_methylation_dict[i][j][6]
+            combined_coordinate_list = [] # placeholder
+            combined_percent_list = [] # placeholder
+            combined_methylated_list = [] # placeholder
+            combined_unmethylated_list = [] # placeholder
+            for k in contig_intergene_cpg_coordinate_methylation_dict[i]:
+                if (contig_intergene_cpg_coordinate_methylation_dict[i][k][1][1]) + 1 == contig_gene_cpg_coordinate_methylation_dict[i][j][0]: # if intergene three_prime_feature_end + 1 equals gene start (must be upstream)
+                    upstream_coordinate_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][3][1]
+                    upstream_percent_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][4][1]
+                    upstream_methylated_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][5][1]
+                    upstream_unmethylated_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][6][1]
+                if (contig_intergene_cpg_coordinate_methylation_dict[i][k][0][0]) - 1 == contig_gene_cpg_coordinate_methylation_dict[i][j][1]: # if intergene five_prime_feature_start - 1 equals gene end (must be downstream)
+                    downstream_coordinate_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][3][0]
+                    downstream_percent_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][4][0]
+                    downstream_methylated_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][5][0]
+                    downstream_unmethylated_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][6][0]
+            combined_coordinate_list = upstream_coordinate_list + gene_coordinate_list + downstream_coordinate_list
+            combined_percent_list = upstream_percent_list + gene_percent_list + downstream_percent_list
+            combined_methylated_list = upstream_methylated_list + gene_methylated_list + downstream_methylated_list
+            combined_unmethylated_list = upstream_unmethylated_list + gene_unmethylated_list + downstream_unmethylated_list
+            gene_and_flanking_sequences_cpg_coordinate_methylation_dict[j] = [contig_gene_cpg_coordinate_methylation_dict[i][j][0], contig_gene_cpg_coordinate_methylation_dict[i][j][1], contig_gene_cpg_coordinate_methylation_dict[i][j][2], combined_coordinate_list, combined_percent_list, combined_methylated_list, combined_unmethylated_list]
+        contig_gene_and_flanking_sequences_cpg_coordinate_methylation_dict[i] = gene_and_flanking_sequences_cpg_coordinate_methylation_dict
+    return contig_gene_and_flanking_sequences_cpg_coordinate_methylation_dict
 
+def gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict, zeropoint):
     contig_gene_cpg_position_methylation_dict = {}
-
     for i in contig_gene_cpg_coordinate_methylation_dict:
         gene_dict = {}
         for j in contig_gene_cpg_coordinate_methylation_dict[i]:
@@ -210,24 +391,171 @@ def gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict):
             strand = contig_gene_cpg_coordinate_methylation_dict[i][j][2]
             start = contig_gene_cpg_coordinate_methylation_dict[i][j][0]
             end = contig_gene_cpg_coordinate_methylation_dict[i][j][1]
-            length = end-start
-            print(length)
+            if strand == "-":
+                if len(contig_gene_cpg_coordinate_methylation_dict[i][j][3]) > 0:
+                    first = contig_gene_cpg_coordinate_methylation_dict[i][j][3][0]
+                    last = contig_gene_cpg_coordinate_methylation_dict[i][j][3][-1]
+                    distance_of_start_from_first = start - first
+                    distance_of_end_from_first = end - first
+                    newstart = first + distance_of_start_from_first
+                    newend = first + distance_of_end_from_first
+                else:
+                    continue
+            if strand == "+":
+                if zeropoint == "start":
+                    zero = start
+                elif zeropoint == "end":
+                    zero = end
+                else:
+                    print("Zeropoint error!")
+            elif strand == "-":
+                if zeropoint == "start":
+                    zero = newstart
+                elif zeropoint == "end":
+                    zero = newend
+                else:
+                    print("Zeropoint error!")
             cpg_position = []
             cpg_percent = []
+            cpg_methylated = []
+            cpg_unmethylated = []
             for k in range(len(contig_gene_cpg_coordinate_methylation_dict[i][j][3])): # scroll through coordinates for given gene
                 if strand == "+":
-                    position = contig_gene_cpg_coordinate_methylation_dict[i][j][3][k]-start
+                    position = contig_gene_cpg_coordinate_methylation_dict[i][j][3][k] - zero # this will mark the position 0
                     percent = contig_gene_cpg_coordinate_methylation_dict[i][j][4][k]
+                    methylated = contig_gene_cpg_coordinate_methylation_dict[i][j][5][k]
+                    unmethylated = contig_gene_cpg_coordinate_methylation_dict[i][j][6][k]
                     cpg_position.append(position)
                     cpg_percent.append(percent)
+                    cpg_methylated.append(methylated)
+                    cpg_unmethylated.append(unmethylated)
                 elif strand == "-":
                     #print("position =", length, "- (", contig_gene_cpg_coordinate_methylation_dict[i][j][3][k], "-", start, ")")
-                    position = length-(contig_gene_cpg_coordinate_methylation_dict[i][j][3][k]-start) # flip positions around
+                    distance_of_k_from_first = contig_gene_cpg_coordinate_methylation_dict[i][j][3][k] - first
+                    flip = last - distance_of_k_from_first # flip coordinates around
+                    position = flip - zero # now calculate position as above
                     percent = contig_gene_cpg_coordinate_methylation_dict[i][j][4][k]
+                    methylated = contig_gene_cpg_coordinate_methylation_dict[i][j][5][k]
+                    unmethylated = contig_gene_cpg_coordinate_methylation_dict[i][j][6][k]
                     cpg_position.append(position)
                     cpg_percent.append(percent)
+                    cpg_methylated.append(methylated)
+                    cpg_unmethylated.append(unmethylated)
                 else:
                     print("Error!")
-            gene_dict[j] = [strand, start, end, cpg_position, cpg_percent]
+            gene_dict[j] = [strand, start, end, cpg_position, cpg_percent, cpg_methylated, cpg_unmethylated]
         contig_gene_cpg_position_methylation_dict[i] = gene_dict
     return contig_gene_cpg_position_methylation_dict
+
+def get_max_cpg_position(contig_gene_cpg_position_methylation_dict):
+    contig_max_cpg_position = {}
+    for i in contig_gene_cpg_position_methylation_dict:
+        max_cpg_position = 0
+        for j in contig_gene_cpg_position_methylation_dict[i]:
+            if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
+                if max(contig_gene_cpg_position_methylation_dict[i][j][3]) > max_cpg_position:
+                    max_cpg_position = max(contig_gene_cpg_position_methylation_dict[i][j][3])
+        contig_max_cpg_position[i] = max_cpg_position
+    return contig_max_cpg_position
+
+def get_min_cpg_position(contig_gene_cpg_position_methylation_dict, contig_max_cpg_position):
+    contig_min_cpg_position = {}
+    for i in contig_gene_cpg_position_methylation_dict:
+        min_cpg_position = contig_max_cpg_position[i]
+        for j in contig_gene_cpg_position_methylation_dict[i]:
+            if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
+                if min(contig_gene_cpg_position_methylation_dict[i][j][3]) < min_cpg_position:
+                    min_cpg_position = min(contig_gene_cpg_position_methylation_dict[i][j][3])
+        contig_min_cpg_position[i] = min_cpg_position
+    return contig_min_cpg_position
+
+def position_methylation_stat_tally(contig_min_position_dict, contig_max_position_dict, contig_feature_position_context_methylation_dict, stat):
+    if stat == "percent":
+        stat = 4
+    if stat == "methylated_count":
+        stat = 5
+    if stat == "unmethylated_count":
+        stat = 6
+    statindex = stat
+    position_stat_tally_dict = {}
+    for i in range(min(contig_min_position_dict.values()), max(contig_max_position_dict.values())+1):
+        position_stat_tally_dict[i] = []
+    for i in contig_feature_position_context_methylation_dict:
+        for j in contig_feature_position_context_methylation_dict[i]:
+            if len(contig_feature_position_context_methylation_dict[i][j][3]) > 0:
+                for k in range(len(contig_feature_position_context_methylation_dict[i][j][3])):
+                    print("position:", contig_feature_position_context_methylation_dict[i][j][3][k])
+                    position = contig_feature_position_context_methylation_dict[i][j][3][k]
+                    position_stat = contig_feature_position_context_methylation_dict[i][j][statindex][k]
+                    position_stat_list = position_stat_tally_dict[position]
+                    position_stat_list.append(position_stat)
+                    position_stat_tally_dict[position] = position_stat_list
+    return position_stat_tally_dict
+
+def position_methylation_stats_to_list(percent_position_tally_dict, methylated_count_position_tally_dict, unmethylated_count_position_tally_dict):
+    position_length = []
+    position_position = []
+    position_median_percent = []
+    position_max_percent = []
+    position_methylated_count = []
+    position_unmethylated_count = []
+    for i in percent_position_tally_dict:
+        position_length.append(len(percent_position_tally_dict[i]))
+        position_position.append(i)
+        if len(percent_position_tally_dict[i]) > 0:
+            position_median_percent.append(statistics.median(percent_position_tally_dict[i]))
+            if len(percent_position_tally_dict) > 1:
+                position_max_percent.append(max(percent_position_tally_dict[i]))
+            else:
+                position_max_percent.append(percent_position_tally_dict[i][0])
+        else:
+            position_median_percent.append(-1)
+            position_max_percent.append(-1)
+    for i in methylated_count_position_tally_dict:
+        if len(methylated_count_position_tally_dict[i]) > 0:
+            methylated_count = 0
+            for j in methylated_count_position_tally_dict[i]:
+                methylated_count += j
+            position_methylated_count.append(methylated_count)
+        else:
+            position_methylated_count.append(-1)
+    for i in unmethylated_count_position_tally_dict:
+        if len(unmethylated_count_position_tally_dict[i]) > 0:
+            unmethylated_count = 0
+            for j in unmethylated_count_position_tally_dict[i]:
+                unmethylated_count += j
+            position_unmethylated_count.append(unmethylated_count)
+        else:
+            position_unmethylated_count.append(-1)
+    stats_list = [position_position, position_length, position_median_percent, position_max_percent, position_methylated_count, position_unmethylated_count]
+    return stats_list
+
+def get_feature_methylation_counts(contig_feature_position_methylation_dict, start_position, end_position):
+    # record methylation data between selected positions for each gene, i.e. average methylation
+    contig_feature_selected_positions_stats_dict = {}
+    for i in contig_feature_position_methylation_dict:
+        feature_selected_positions_stats_dict = {}
+        feature_selected_methylated_count = 0
+        feature_selected_unmethylated_count = 0
+        for j in contig_feature_position_methylation_dict[i]:
+            feature_selected_positions_methylated = []
+            feature_selected_positions_unmethylated = []
+            for k in range(len(contig_feature_position_methylation_dict[i][j][3])):
+                if contig_feature_position_methylation_dict[i][j][3][k] <= end_position and contig_feature_position_methylation_dict[i][j][3][k] >= start_position:
+                    feature_selected_positions_methylated.append(contig_feature_position_methylation_dict[i][j][5][k])
+                    feature_selected_positions_unmethylated.append(contig_feature_position_methylation_dict[i][j][6][k])
+            for m in feature_selected_positions_methylated:
+                feature_selected_methylated_count += m
+            for u in feature_selected_positions_unmethylated:
+                feature_selected_unmethylated_count += u
+            feature_selected_positions_stats_dict[j] = [feature_selected_methylated_count, feature_selected_unmethylated_count]
+        contig_feature_selected_positions_stats_dict[i] = feature_selected_positions_stats_dict
+    return contig_feature_selected_positions_stats_dict
+
+def feature_methylation_counts_to_percent_list(contig_feature_selected_positions_stats_dict):
+    selected_feature_position_methylation_list = []
+    for i in contig_feature_selected_positions_stats_dict:
+        for j in contig_feature_selected_positions_stats_dict[i]:
+            if contig_feature_selected_positions_stats_dict[i][j][1] > 0:
+                selected_feature_position_methylation_list.append(100*(contig_feature_selected_positions_stats_dict[i][j][0]/(contig_feature_selected_positions_stats_dict[i][j][0]+contig_feature_selected_positions_stats_dict[i][j][1])))
+    return selected_feature_position_methylation_list

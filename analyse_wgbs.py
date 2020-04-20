@@ -13,15 +13,22 @@ import statistics
 ### DEFINE PATHS TO DATA FILES ###
 
 path_to_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/200305/coverageStatsTest"
-cx_report = "adultCombined.CX_report.txt"
-sample_CX_data_file = path_to_data+"/"+cx_report
 fasta = "GCF_002156985.1_Harm_1.0_genomic.fa"
 gff = "GCF_002156985.1_Harm_1.0_genomic.gff"
+P4_CX_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/20191219/methylation_extract/Jack-methylation-P4/Jack-methylation-P4_R1_merged_trimmed_filtered.deduplicated.CX_report.txt"
+P5_CX_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/20191219/methylation_extract/Jack-methylation-P5/Jack-methylation-P5_R1_merged_trimmed_filtered.deduplicated.CX_report.txt"
+P6_CX_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/20191219/methylation_extract/Jack-methylation-P6/Jack-methylation-P6_R1_merged_trimmed_filtered.deduplicated.CX_report.txt"
+pupa_combined_CX_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/200305/methylationExtractPupaCombine/pupaCombined.CX_report.txt"
+adult_combined_CX_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/200305/methylationExtractAdultCombine/adultCombined.CX_report.txt"
+P4_SSSI_CX_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/20191219/methylation_extract/Jack-methylation-repli-g-SSS1-P4/Jack-methylation-repli-g-SSS1-P4_R1_merged_trimmed_filtered.deduplicated.CX_report.txt"
+A7_SSSI_CX_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/20191219/methylation_extract/Jack-methylation-repli-g-A7/Jack-methylation-repli-g-A7_R1_merged_trimmed_filtered.deduplicated.CX_report.txt"
+P4_replig_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/20191219/methylation_extract/Jack-methylation-repli-g-P4/Jack-methylation-repli-g-P4_R1_merged_trimmed_filtered.deduplicated.CX_report.txt"
+A7_replig_data = "/media/kevlab/projects/helicoverpa_epigenetics/data/20191219/methylation_extract/Jack-methylation-repli-g-A7/Jack-methylation-repli-g-A7_R1_merged_trimmed_filtered.deduplicated.CX_report.txt"
 
 ### CREATE A CONTIG SEQUENCE DICTIONARY ###
 
 #contig_list = ["NC_014668.1","NW_018396379.1","NW_018396386.1","NW_018396377.1","NW_018396384.1"]
-contig_list = import_contig_list("/media/kevlab/projects/helicoverpa_epigenetics/data/200305/coverageStatsTest/contigs_test.txt")
+contig_list = import_contig_list("/media/kevlab/projects/helicoverpa_epigenetics/data/200305/coverageStatsTest/contigs.txt")
 contig_sequence_dict = import_contig_sequence(contig_list)
 
 print(len(contig_sequence_dict), "contigs to be analysed!")
@@ -39,7 +46,15 @@ intergene_annotation = import_intergene_coordinates(gene_annotation, contig_sequ
 
 ### IMPORT METHYLATION DATA ###
 
-adult_combined_methylation_dict = import_methylation_data(contig_list, sample_CX_data_file)
+P4_methylation_dict = import_methylation_data(contig_list, P4_CX_data)
+P5_methylation_dict = import_methylation_data(contig_list, P5_CX_data)
+P6_methylation_dict = import_methylation_data(contig_list, P6_CX_data)
+pupa_combined_methylation_dict = import_methylation_data(contig_list, pupa_combined_CX_data)
+adult_combined_methylation_dict = import_methylation_data(contig_list, adult_combined_CX_data)
+P4_SSSI_methylation_dict = import_methylation_data(contig_list, P4_SSSI_CX_data)
+A7_SSSI_methylation_dict = import_methylation_data(contig_list, A7_SSSI_CX_data)
+P4_replig_methylation_dict = import_methylation_dict(contig_list, P4_replig_CX_data)
+A7_replig_methylation_dict = import_methylation_data(contig_list, A7_replig_CX_data)
 
 ### MARK CPG COORDINATES IN IMPORTED CONTIGS ###
 
@@ -47,195 +62,247 @@ cpg_coordinates = get_coordinates(contig_sequence_dict, "CG")
 # check that it works!
 # contig_sequence_dict["NC_014668.1"][cpg_coordinates["NC_014668.1"][0][2]:cpg_coordinates["NC_014668.1"][1][2]]
 
-### EXTRACT SPECIFIC METRICS ###
+### EXTRACT STATS FOR GENIC AND INTERGENIC REGIONS ###
 
-# extract gene stats (i.e. size, cpg count, cpg percent, cpg coordinates)
-
-contig_gene_cpg_count_dict = {}
-contig_gene_cpg_coords_dict = {}
-contig_gene_size_dict = {}
-contig_gene_cpg_percent_dict = {}
-
-for i in contig_sequence_dict:
-    print(i)
-    number_of_cpgs = []
-    cpg_coords = []
-    gene_cpg_coords_dict = {}
-    size_of_gene = []
-    gene_percent_cpg = []
-    for j in range(len(gene_annotation[i][0])):
-        gene_start_coordinate = int(gene_annotation[i][0][j])
-        gene_end_coordinate = int(gene_annotation[i][1][j])
-        gene_cpg_count = 0
-        gene_cpg_coords = []
-        for k in range(len(cpg_coordinates[i][0])):
-            if int(cpg_coordinates[i][0][k]) <= gene_end_coordinate:
-                if int(cpg_coordinates[i][0][k]) >= gene_start_coordinate:
-                    gene_cpg_count += 1
-                    gene_cpg_coords.append(cpg_coordinates[i][0][k])
-                    print(i,"\t",cpg_coordinates[i][0][k],"\t",contig_sequence_dict[i][cpg_coordinates[i][0][k]:cpg_coordinates[i][1][k]])
-        number_of_cpgs.append(gene_cpg_count)
-        cpg_coords.append(gene_cpg_coords)
-        gene_cpg_coords_dict[gene_start_coordinate] = gene_cpg_coords
-        size_of_gene.append(gene_end_coordinate-gene_start_coordinate)
-        gene_percent_cpg.append(100*(gene_cpg_count/(gene_end_coordinate-gene_start_coordinate)))
-        print("gene_cpg_count:", gene_cpg_count)
-    contig_gene_cpg_count_dict[i] = number_of_cpgs
-    contig_gene_cpg_coords_dict[i] = gene_cpg_coords_dict
-    contig_gene_size_dict[i] = size_of_gene
-    contig_gene_cpg_percent_dict[i] = gene_percent_cpg
+# extract stats (i.e. feature size, cpg count, cpg percent, cpg coordinates)
+contig_gene_stats_dict = get_feature_stats(cpg_coordinates, gene_annotation, contig_sequence_dict)
+contig_intergene_stats_dict = get_feature_stats(cpg_coordinates, intergene_annotation, contig_sequence_dict)
 
 ### ANALYSE SAMPLES ###
 
-contig_cpg_coverage_threshold_dict = {}
-contig_cpg_coordinate_dict = {}
-contig_cpg_percent_methylation_dict = {}
-contig_cpg_counts_methylation_dict = {}
-required_coverage = 20
+pupa_contig_cg_methylation_stats_dict = get_sample_methylation_stats(pupa_combined_methylation_dict, 20, "CG")
+pupa_contig_chg_methylation_stats_dict = get_sample_methylation_stats(pupa_combined_methylation_dict, 20, "CHG")
+pupa_contig_chh_methylation_stats_dict = get_sample_methylation_stats(pupa_combined_methylation_dict, 20, "CHH")
+adult_contig_cg_methylation_stats_dict = get_sample_methylation_stats(adult_combined_methylation_dict, 20, "CG")
+adult_contig_chg_methylation_stats_dict = get_sample_methylation_stats(adult_combined_methylation_dict, 20, "CHG")
+adult_contig_chh_methylation_stats_dict = get_sample_methylation_stats(adult_combined_methylation_dict, 20, "CHH")
 
-for i in contig_gene_cpg_coords_dict: # contig name
+# group data by gene and intergene (i.e. feature) coordinates
+pupa_gene_cg_methylation = contig_to_feature(pupa_contig_cg_methylation_stats_dict, gene_annotation)
+pupa_intergene_cg_methylation = contig_to_feature(pupa_contig_cg_methylation_stats_dict, intergene_annotation)
+
+pupa_gene_chg_methylation = contig_to_feature(pupa_contig_chg_methylation_stats_dict, gene_annotation)
+pupa_intergene_chg_methylation = contig_to_feature(pupa_contig_chg_methylation_stats_dict, intergene_annotation)
+
+pupa_gene_chh_methylation = contig_to_feature(pupa_contig_chh_methylation_stats_dict, gene_annotation)
+pupa_intergene_chh_methylation = contig_to_feature(pupa_contig_chh_methylation_stats_dict, intergene_annotation)
+
+adult_gene_cg_methylation = contig_to_feature(adult_contig_cg_methylation_stats_dict, gene_annotation)
+adult_intergene_cg_methylation = contig_to_feature(adult_contig_cg_methylation_stats_dict, intergene_annotation)
+
+adult_gene_chg_methylation = contig_to_feature(adult_contig_chg_methylation_stats_dict, gene_annotation)
+adult_intergene_chg_methylation = contig_to_feature(adult_contig_chg_methylation_stats_dict, intergene_annotation)
+
+adult_gene_chh_methylation = contig_to_feature(adult_contig_chh_methylation_stats_dict, gene_annotation)
+adult_intergene_chh_methylation = contig_to_feature(adult_contig_chh_methylation_stats_dict, intergene_annotation)
+
+# add flanking regions to gene coordinate data (upstream and downstream)
+pupa_gene_plus_flanking_cg_methylation = add_upstream_downstream_regions(pupa_gene_cg_methylation, pupa_intergene_cg_methylation)
+pupa_gene_plus_flanking_chg_methylation = add_upstream_downstream_regions(pupa_gene_chg_methylation, pupa_intergene_chg_methylation)
+pupa_gene_plus_flanking_chh_methylation = add_upstream_downstream_regions(pupa_gene_chh_methylation, pupa_intergene_chh_methylation)
+
+adult_gene_plus_flanking_cg_methylation = add_upstream_downstream_regions(adult_gene_cg_methylation, adult_intergene_cg_methylation)
+adult_gene_plus_flanking_chg_methylation = add_upstream_downstream_regions(adult_gene_chg_methylation, adult_intergene_chg_methylation)
+adult_gene_plus_flanking_chh_methylation = add_upstream_downstream_regions(adult_gene_chh_methylation, adult_intergene_chh_methylation)
+
+# check upstream, gene and downstream cpg count stats
+#upstream = []
+#downstream = []
+#gene = []
+#for i in adult_gene_plus_flanking_methylation:
+#    for j in adult_gene_plus_flanking_methylation[i]:
+#        for k in range(len(adult_gene_plus_flanking_methylation[i][j][3])):
+#            if adult_gene_plus_flanking_methylation[i][j][3][k] < adult_gene_plus_flanking_methylation[i][j][0]:
+#                upstream.append(adult_gene_plus_flanking_methylation[i][j][3][k])
+#            elif adult_gene_plus_flanking_methylation[i][j][3][k] > adult_gene_plus_flanking_methylation[i][j][1]:
+#                downstream.append(adult_gene_plus_flanking_methylation[i][j][3][k])
+#            else:
+#                gene.append(adult_gene_plus_flanking_methylation[i][j][3][k])
+#
+#len(upstream)
+#len(gene)
+#len(downstream)
+
+# convert coordinates to positions
+pupa_gene_plus_flanking_cg_methylation_position = gene_coordinate_to_position(pupa_gene_plus_flanking_cg_methylation, "start")
+pupa_gene_plus_flanking_cg_methylation_position_end = gene_coordinate_to_position(pupa_gene_plus_flanking_cg_methylation, "end")
+pupa_gene_plus_flanking_chg_methylation_position = gene_coordinate_to_position(pupa_gene_plus_flanking_chg_methylation, "start")
+pupa_gene_plus_flanking_chg_methylation_position_end = gene_coordinate_to_position(pupa_gene_plus_flanking_chg_methylation, "end")
+pupa_gene_plus_flanking_chh_methylation_position = gene_coordinate_to_position(pupa_gene_plus_flanking_chh_methylation, "start")
+pupa_gene_plus_flanking_chh_methylation_position_end = gene_coordinate_to_position(pupa_gene_plus_flanking_chh_methylation, "end")
+
+adult_gene_plus_flanking_cg_methylation_position = gene_coordinate_to_position(adult_gene_plus_flanking_cg_methylation, "start")
+adult_gene_plus_flanking_cg_methylation_position_end = gene_coordinate_to_position(adult_gene_plus_flanking_cg_methylation, "end")
+adult_gene_plus_flanking_chg_methylation_position = gene_coordinate_to_position(adult_gene_plus_flanking_chg_methylation, "start")
+adult_gene_plus_flanking_chg_methylation_position_end = gene_coordinate_to_position(adult_gene_plus_flanking_chg_methylation, "end")
+adult_gene_plus_flanking_chh_methylation_position = gene_coordinate_to_position(adult_gene_plus_flanking_chh_methylation, "start")
+adult_gene_plus_flanking_chh_methylation_position_end = gene_coordinate_to_position(adult_gene_plus_flanking_chh_methylation, "end")
+
+# find max and min positions
+pupa_max_cpg_position = get_max_cpg_position(pupa_gene_plus_flanking_cg_methylation_position)
+pupa_max_cpg_position_end = get_max_cpg_position(pupa_gene_plus_flanking_cg_methylation_position_end)
+pupa_max_chg_position = get_max_cpg_position(pupa_gene_plus_flanking_chg_methylation_position)
+pupa_max_chg_position_end = get_max_cpg_position(pupa_gene_plus_flanking_chg_methylation_position_end)
+pupa_max_chh_position = get_max_cpg_position(pupa_gene_plus_flanking_chh_methylation_position)
+pupa_max_chh_position_end = get_max_cpg_position(pupa_gene_plus_flanking_chh_methylation_position_end)
+
+adult_max_cpg_position = get_max_cpg_position(adult_gene_plus_flanking_cg_methylation_position)
+adult_max_cpg_position_end = get_max_cpg_position(adult_gene_plus_flanking_cg_methylation_position_end)
+adult_max_chg_position = get_max_cpg_position(adult_gene_plus_flanking_chg_methylation_position)
+adult_max_chg_position_end = get_max_cpg_position(adult_gene_plus_flanking_chg_methylation_position_end)
+adult_max_chh_position = get_max_cpg_position(adult_gene_plus_flanking_chh_methylation_position)
+adult_max_chh_position_end = get_max_cpg_position(adult_gene_plus_flanking_chh_methylation_position_end)
+
+pupa_min_cpg_position = get_min_cpg_position(pupa_gene_plus_flanking_cg_methylation_position, pupa_max_cpg_position)
+pupa_min_cpg_position_end = get_min_cpg_position(pupa_gene_plus_flanking_cg_methylation_position_end, pupa_max_cpg_position_end)
+pupa_min_chg_position = get_min_cpg_position(pupa_gene_plus_flanking_chg_methylation_position, pupa_max_chg_position)
+pupa_min_chg_position_end = get_min_cpg_position(pupa_gene_plus_flanking_chg_methylation_position_end, pupa_max_chg_position_end)
+pupa_min_chh_position = get_min_cpg_position(pupa_gene_plus_flanking_chh_methylation_position, pupa_max_chh_position)
+pupa_min_chh_position_end = get_min_cpg_position(pupa_gene_plus_flanking_chh_methylation_position_end, pupa_max_chh_position_end)
+
+adult_min_cpg_position = get_min_cpg_position(adult_gene_plus_flanking_cg_methylation_position, adult_max_cpg_position)
+adult_min_cpg_position_end = get_min_cpg_position(adult_gene_plus_flanking_cg_methylation_position_end, adult_max_cpg_position_end)
+adult_min_chg_position = get_min_cpg_position(adult_gene_plus_flanking_chg_methylation_position, adult_max_chg_position)
+adult_min_chg_position_end = get_min_cpg_position(adult_gene_plus_flanking_chg_methylation_position_end, adult_max_chg_position_end)
+adult_min_chh_position = get_min_cpg_position(adult_gene_plus_flanking_chh_methylation_position, adult_max_chh_position)
+adult_min_chh_position_end = get_min_cpg_position(adult_gene_plus_flanking_chh_methylation_position_end, adult_max_chh_position_end)
+
+# create percent cpg dictionary entry for each position between min and max
+pupa_percent_cg_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_cpg_position, pupa_max_cpg_position, pupa_gene_plus_flanking_cg_methylation_position, "percent")
+pupa_methylated_count_cg_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_cpg_position, pupa_max_cpg_position, pupa_gene_plus_flanking_cg_methylation_position, "methylated_count")
+pupa_unmethylated_count_cg_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_cpg_position, pupa_max_cpg_position, pupa_gene_plus_flanking_cg_methylation_position, "unmethylated_count")
+pupa_percent_cg_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_cpg_position_end, pupa_max_cpg_position_end, pupa_gene_plus_flanking_cg_methylation_position_end, "percent")
+pupa_methylated_count_cg_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_cpg_position_end, pupa_max_cpg_position_end, pupa_gene_plus_flanking_cg_methylation_position_end, "methylated_count")
+pupa_unmethylated_count_cg_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_cpg_position_end, pupa_max_cpg_position_end, pupa_gene_plus_flanking_cg_methylation_position_end, "unmethylated_count")
+
+pupa_percent_chg_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_chg_position, pupa_max_chg_position, pupa_gene_plus_flanking_chg_methylation_position, "percent")
+pupa_methylated_count_chg_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_chg_position, pupa_max_chg_position, pupa_gene_plus_flanking_chg_methylation_position, "methylated_count")
+pupa_unmethylated_count_chg_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_chg_position, pupa_max_chg_position, pupa_gene_plus_flanking_chg_methylation_position, "unmethylated_count")
+pupa_percent_chg_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_chg_position_end, pupa_max_chg_position_end, pupa_gene_plus_flanking_chg_methylation_position_end, "percent")
+pupa_methylated_count_chg_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_chg_position_end, pupa_max_chg_position_end, pupa_gene_plus_flanking_chg_methylation_position_end, "methylated_count")
+pupa_unmethylated_count_chg_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_chg_position_end, pupa_max_chg_position_end, pupa_gene_plus_flanking_chg_methylation_position_end, "unmethylated_count")
+
+pupa_percent_chh_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_chh_position, pupa_max_chh_position, pupa_gene_plus_flanking_chh_methylation_position, "percent")
+pupa_methylated_count_chh_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_chh_position, pupa_max_chh_position, pupa_gene_plus_flanking_chh_methylation_position, "methylated_count")
+pupa_unmethylated_count_chh_methylation_position_tally_dict = position_methylation_stat_tally(pupa_min_chh_position, pupa_max_chh_position, pupa_gene_plus_flanking_chh_methylation_position, "unmethylated_count")
+pupa_percent_chh_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_chh_position_end, pupa_max_chh_position_end, pupa_gene_plus_flanking_chh_methylation_position_end, "percent")
+pupa_methylated_count_chh_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_chh_position_end, pupa_max_chh_position_end, pupa_gene_plus_flanking_chh_methylation_position_end, "methylated_count")
+pupa_unmethylated_count_chh_methylation_position_end_tally_dict = position_methylation_stat_tally(pupa_min_chh_position_end, pupa_max_chh_position_end, pupa_gene_plus_flanking_chh_methylation_position_end, "unmethylated_count")
+
+adult_percent_cg_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_cpg_position, adult_max_cpg_position, adult_gene_plus_flanking_cg_methylation_position, "percent")
+adult_methylated_cg_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_cpg_position, adult_max_cpg_position, adult_gene_plus_flanking_cg_methylation_position, "methylated_count")
+adult_unmethylated_cg_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_cpg_position, adult_max_cpg_position, adult_gene_plus_flanking_cg_methylation_position, "unmethylated_count")
+adult_percent_cg_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_cpg_position_end, adult_max_cpg_position_end, adult_gene_plus_flanking_cg_methylation_position_end, "percent")
+adult_methylated_count_cg_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_cpg_position_end, adult_max_cpg_position_end, adult_gene_plus_flanking_cg_methylation_position_end, "methylated_count")
+adult_unmethylated_count_cg_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_cpg_position_end, adult_max_cpg_position_end, adult_gene_plus_flanking_cg_methylation_position_end, "unmethylated_count")
+
+adult_percent_chg_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_chg_position, adult_max_chg_position, adult_gene_plus_flanking_chg_methylation_position, "percent")
+adult_methylated_chg_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_chg_position, adult_max_chg_position, adult_gene_plus_flanking_chg_methylation_position, "methylated_count")
+adult_unmethylated_chg_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_chg_position, adult_max_chg_position, adult_gene_plus_flanking_chg_methylation_position, "unmethylated_count")
+adult_percent_chg_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_chg_position_end, adult_max_chg_position_end, adult_gene_plus_flanking_chg_methylation_position_end, "percent")
+adult_methylated_count_chg_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_chg_position_end, adult_max_chg_position_end, adult_gene_plus_flanking_chg_methylation_position_end, "methylated_count")
+adult_unmethylated_count_chg_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_chg_position_end, adult_max_chg_position_end, adult_gene_plus_flanking_chg_methylation_position_end, "unmethylated_count")
+
+adult_percent_chh_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_chh_position, adult_max_chh_position, adult_gene_plus_flanking_chh_methylation_position, "percent")
+adult_methylated_chh_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_chh_position, adult_max_chh_position, adult_gene_plus_flanking_chh_methylation_position, "methylated_count")
+adult_unmethylated_chh_methylation_position_tally_dict = position_methylation_stat_tally(adult_min_chh_position, adult_max_chh_position, adult_gene_plus_flanking_chh_methylation_position, "unmethylated_count")
+adult_percent_chh_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_chh_position_end, adult_max_chh_position_end, adult_gene_plus_flanking_chh_methylation_position_end, "percent")
+adult_methylated_count_chh_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_chh_position_end, adult_max_chh_position_end, adult_gene_plus_flanking_chh_methylation_position_end, "methylated_count")
+adult_unmethylated_count_chh_methylation_position_end_tally_dict = position_methylation_stat_tally(adult_min_chh_position_end, adult_max_chh_position_end, adult_gene_plus_flanking_chh_methylation_position_end, "unmethylated_count")
+
+# add length, position, methylated_count, unmethylated_count, median and max data
+pupa_cg_position_stats = position_methylation_stats_to_list(pupa_percent_cg_methylation_position_tally_dict, pupa_methylated_count_cg_methylation_position_tally_dict, pupa_unmethylated_count_cg_methylation_position_tally_dict)
+pupa_cg_position_end_stats = position_methylation_stats_to_list(pupa_percent_cg_methylation_position_end_tally_dict, pupa_methylated_count_cg_methylation_position_end_tally_dict, pupa_unmethylated_count_cg_methylation_position_end_tally_dict)
+
+pupa_chg_position_stats = position_methylation_stats_to_list(pupa_percent_chg_methylation_position_tally_dict, pupa_methylated_count_chg_methylation_position_tally_dict, pupa_unmethylated_count_chg_methylation_position_tally_dict)
+pupa_chg_position_end_stats = position_methylation_stats_to_list(pupa_percent_chg_methylation_position_end_tally_dict, pupa_methylated_count_chg_methylation_position_end_tally_dict, pupa_unmethylated_count_chg_methylation_position_end_tally_dict)
+
+pupa_chh_position_stats = position_methylation_stats_to_list(pupa_percent_chh_methylation_position_tally_dict, pupa_methylated_count_chh_methylation_position_tally_dict, pupa_unmethylated_count_chh_methylation_position_tally_dict)
+pupa_chh_position_end_stats = position_methylation_stats_to_list(pupa_percent_chh_methylation_position_end_tally_dict, pupa_methylated_count_chh_methylation_position_end_tally_dict, pupa_unmethylated_count_chh_methylation_position_end_tally_dict)
+
+adult_cg_position_stats = position_methylation_stats_to_list(adult_percent_cg_methylation_position_tally_dict, adult_methylated_cg_methylation_position_tally_dict, adult_unmethylated_cg_methylation_position_tally_dict)
+adult_cg_position_end_stats = position_methylation_stats_to_list(adult_percent_cg_methylation_position_end_tally_dict, adult_methylated_count_cg_methylation_position_end_tally_dict, adult_unmethylated_count_cg_methylation_position_end_tally_dict)
+
+adult_chg_position_stats = position_methylation_stats_to_list(adult_percent_chg_methylation_position_tally_dict, adult_methylated_chg_methylation_position_tally_dict, adult_unmethylated_chg_methylation_position_tally_dict)
+adult_chg_position_end_stats = position_methylation_stats_to_list(adult_percent_chg_methylation_position_end_tally_dict, adult_methylated_count_chg_methylation_position_end_tally_dict, adult_unmethylated_count_chg_methylation_position_end_tally_dict)
+
+adult_chh_position_stats = position_methylation_stats_to_list(adult_percent_chh_methylation_position_tally_dict, adult_methylated_chh_methylation_position_tally_dict, adult_unmethylated_chh_methylation_position_tally_dict)
+adult_chh_position_end_stats = position_methylation_stats_to_list(adult_percent_chh_methylation_position_end_tally_dict, adult_methylated_count_chh_methylation_position_end_tally_dict, adult_unmethylated_count_chh_methylation_position_end_tally_dict)
+
+# plot upstream and gene methylation data in 500 basepair bins (positions -3000 to +3000)
+bin_size = 250
+start_list = []
+end_list = []
+i = -3000
+while i in range(-3000,3000):
     print(i)
-    contig_coordinate = []
-    contig_percent_data = []
-    contig_cumulative_methylated = 0
-    contig_cumulative_unmethylated = 0
-    contig_pass_coverage_threshold = 0
-    contig_fail_coverage_threshold = 0
-    for j in contig_gene_cpg_coords_dict[i]: # gene start coordinate
-        for k in contig_gene_cpg_coords_dict[i][j]: # cpg coordinate
-            #coordinate = adult_combined_methylation_dict[i][0][adult_combined_methylation_dict[i][0].index(k)] # not required as coordinate equals k!
-            coordinate = k
-            methylated = adult_combined_methylation_dict[i][2][adult_combined_methylation_dict[i][0].index(k)]
-            unmethylated = adult_combined_methylation_dict[i][3][adult_combined_methylation_dict[i][0].index(k)]
-            total = methylated+unmethylated
-            context = adult_combined_methylation_dict[i][4][adult_combined_methylation_dict[i][0].index(k)]
-            if total >= required_coverage:
-                contig_coordinate.append(coordinate)
-                percent = 100*(methylated/total)
-                contig_percent_data.append(percent)
-                contig_cumulative_methylated += adult_combined_methylation_dict[i][2][adult_combined_methylation_dict[i][0].index(k)]
-                contig_cumulative_unmethylated += adult_combined_methylation_dict[i][3][adult_combined_methylation_dict[i][0].index(k)]
-                contig_pass_coverage_threshold += 1
-            else:
-                contig_fail_coverage_threshold += 1
-    contig_cpg_coverage_threshold_dict[i] = [contig_pass_coverage_threshold, contig_fail_coverage_threshold]
-    contig_cpg_coordinate_dict[i] = contig_coordinate
-    contig_cpg_percent_methylation_dict[i] = contig_percent_data
-    contig_totals_data = [contig_cumulative_methylated, contig_cumulative_unmethylated]
-    contig_cpg_counts_methylation_dict[i] = contig_totals_data
-    if contig_cumulative_methylated+contig_cumulative_unmethylated > 0: # discounts contigs without any CpG's that pass the threshold!
-        print(contig_cpg_percent_methylation_dict[i])
-        print(100*(pass_coverage_threshold/(pass_coverage_threshold+fail_coverage_threshold)), "percent of CpG dinucleotides pass coverage threshold!")
-        print("Total methylated CpG's:  ", cumulative_methylated)
-        print("Total unmethylated CpG's:", cumulative_unmethylated)
-        print("Overall CpG methylation for passing CpG dinucleotides is", 100*(cumulative_methylated/(cumulative_methylated+cumulative_unmethylated)))
-    else:
-        print("No data for this contig!")
+    start_list.append(i)
+    end_list.append(i+(bin_size-1))
+    i += bin_size
 
-print(contig_counts_methylation_dict)
-#print(contig_cpg_percent_methylation_dict)
+bin_data_list = []
+bin_data_label_list = []
 
-contig_gene_cpg_position_methylation_dict = gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict)
-
-contig_max_cpg_position = {}
-for i in contig_gene_cpg_position_methylation_dict:
-    max_cpg_position = 0
-    for j in contig_gene_cpg_position_methylation_dict[i]:
-        if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
-            if max(contig_gene_cpg_position_methylation_dict[i][j][3]) > max_cpg_position:
-                max_cpg_position = max(contig_gene_cpg_position_methylation_dict[i][j][3])
-    contig_max_cpg_position[i] = max_cpg_position
-
-contig_min_cpg_position = {}
-for i in contig_gene_cpg_position_methylation_dict:
-    min_cpg_position = contig_max_cpg_position[i]
-    for j in contig_gene_cpg_position_methylation_dict[i]:
-        if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
-            if min(contig_gene_cpg_position_methylation_dict[i][j][3]) < min_cpg_position:
-                min_cpg_position = min(contig_gene_cpg_position_methylation_dict[i][j][3])
-    contig_min_cpg_position[i] = min_cpg_position
-
-position_percent_cpg_list_dict = {}
-for i in range(0, max(contig_max_cpg_position.values())+1):
-    position_percent_cpg_list_dict[i] = []
-
-for i in contig_gene_cpg_position_methylation_dict:
-    for j in contig_gene_cpg_position_methylation_dict[i]:
-        if len(contig_gene_cpg_position_methylation_dict[i][j][3]) > 0:
-            #print("TRUE")
-            for k in range(len(contig_gene_cpg_position_methylation_dict[i][j][3])):
-                #print(len(contig_gene_cpg_position_methylation_dict[i][j][3]))
-                print("position:", contig_gene_cpg_position_methylation_dict[i][j][3][k], "percent:", contig_gene_cpg_position_methylation_dict[i][j][4][k])
-                position_list = position_percent_cpg_list_dict[contig_gene_cpg_position_methylation_dict[i][j][3][k]]
-                position_list.append(contig_gene_cpg_position_methylation_dict[i][j][4][k])
-                position_percent_cpg_list_dict[contig_gene_cpg_position_methylation_dict[i][j][3][k]] = position_list
-
-position_length = []
-for i in position_percent_cpg_list_dict:
-     position_length.append(len(position_percent_cpg_list_dict[i]))
-
-position_median_percent = []
-for i in position_percent_cpg_list_dict:
-   if len(position_percent_cpg_list_dict[i]) > 0:
-      position_median_percent.append(statistics.median(position_percent_cpg_list_dict[i]))
-   else:
-      position_median_percent.append(-1)
-
-### PLOT DATA ###
-
-## Boxplot
-data_to_plot = []
-for i in contig_cpg_percent_methylation_dict:
-    name = tuple(contig_cpg_percent_methylation_dict[i])
-    data_to_plot.append(name)
+for i in range(len(start_list)):
+    tmp_bin_data = get_feature_methylation_counts(pupa_gene_plus_flanking_cg_methylation_position, start_list[i], end_list[i])
+    bin_data = feature_methylation_counts_to_percent_list(tmp_bin_data)
+    bin_data_list.append(bin_data)
+    bin_data_label = str(start_list[i])+"."+str(end_list[i])
+    bin_data_label_list.append(bin_data_label)
 
 # Create a figure instance
+plt.clf()
 fig = plt.figure(1, figsize=(9, 6))
-
 # Create an axes instance
 ax = fig.add_subplot(111)
-
+ax.set_xticklabels(bin_data_label_list, rotation=40, ha='right')
 # Create the boxplot
-bp = ax.boxplot(data_to_plot)
-
+bp = ax.boxplot(bin_data_list)
 # Save the figure
-fig.savefig('fig2.png', bbox_inches='tight')
+fig.savefig('pupa_upstream_and_gene_methylation_bin_size_250.png', bbox_inches='tight', dpi=300)
 
-## Histogram
-hist_data = []
-for i in contig_cpg_percent_methylation_dict:
-    name = list(contig_cpg_percent_methylation_dict[i])
-    hist_data.append(name)
+# plot number of cpg's analysed between positions -500 and +500
+input_position_stats = pupa_chh_position_end_stats
+x = []
+y = []
+z = []
+w = []
+m = []
+u = []
+t = []
+a = []
+for i in range(-5000,5001):
+    print(i)
+    x.append(i)
+    y.append(input_position_stats[1][input_position_stats[0].index(0)+i]) # collect number of values for selected positions
+    z.append(input_position_stats[2][input_position_stats[0].index(0)+i]) # collect median values for selected positions
+    w.append(input_position_stats[3][input_position_stats[0].index(0)+i])
+    m.append(input_position_stats[4][input_position_stats[0].index(0)+i])
+    u.append(input_position_stats[5][input_position_stats[0].index(0)+i])
+    t.append(input_position_stats[4][input_position_stats[0].index(0)+i]+input_position_stats[5][input_position_stats[0].index(0)+i])
+    a.append(input_position_stats[4][input_position_stats[0].index(0)+i]/(input_position_stats[4][input_position_stats[0].index(0)+i]+input_position_stats[5][input_position_stats[0].index(0)+i]))
 
-# create bins
-bin = []
-for i in range(0,101):
-    bin.append(i)
-
-# assign bin values
-bin_values = []
-
-for i in bin:
-    for j in hist_data[1]:
-        if i == int(round(j, 0)):
-            binned_values.append(i)
-
-# create bin frequency dict
-counted = count_elements(binned_values)
-
-# create histogram
-ascii_histogram(binned_values)
-
-## Barplots
 plt.clf()
-x = np.arange(len(position_length[0:5000]))
-y = position_length[0:5000]
-plt.bar(x,y)
-plt.savefig("lengthbarplot.png")
+plt.plot(x,y, marker='o', linestyle='None', color='b', markersize=2, label='Square')
+plt.savefig("pupa_chh_lengthplot_end.png", dpi=300)
 plt.clf()
-
-y = position_median_percent[0:5000]
-plt.bar(x,y)
-plt.savefig("medianbarplot.png")
+plt.ylim(0, 0.5)
+plt.plot(x,z, marker='o', linestyle='None', color='r', markersize=2, label='Square')
+plt.savefig("pupa_chh_medianplot_end.png", dpi=300)
 plt.clf()
-
+plt.plot(x,w, marker='o', linestyle='None', color='g', markersize=2, label='Square')
+plt.savefig("pupa_chh_maxplot_end.png", dpi=300)
+plt.clf()
+plt.plot(x,t, marker='o', linestyle='None', color='y', markersize=2, label='Square')
+plt.savefig("pupa_chh_covplot_end.png", dpi=300)
+plt.clf()
+plt.plot(x,m, marker='o', linestyle='None', color='m', markersize=2, label='Square')
+plt.savefig("pupa_chh_methplot_end.png", dpi=300)
+plt.clf()
+plt.plot(x,u, marker='o', linestyle='None', color='c', markersize=2, label='Square')
+plt.savefig("pupa_chh_unmethplot_end.png", dpi=300)
+plt.clf()
+plt.ylim(0,0.15)
+plt.plot(x,a, marker='o', linestyle='None', color='k', markersize=2, label='Square')
+plt.savefig("pupa_chh_methovertotplot_end.png", dpi=300)
+plt.clf()
