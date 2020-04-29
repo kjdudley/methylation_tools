@@ -1,3 +1,6 @@
+import time
+import statistics
+
 def import_contig_list(text_file_path):
     contig_list = []
     with open(text_file_path, "r") as text_file:
@@ -123,7 +126,7 @@ def get_coordinates(sequence_dict, subsequence):
         start_coordinate_list = []
         end_coordinate_list = []
         sequence = sequence_dict[i]
-        print(sequence[0:11])
+        #print(sequence[0:11])
         for j in range(len(sequence)):
             if j > len(sequence)-len(subsequence):
                 break
@@ -147,7 +150,7 @@ def get_coordinates(sequence_dict, subsequence):
         coordinate_dict[i] = coordinate_list
     return coordinate_dict
 
-def import_methylation_data(contig_list, sample_CX_data_file):
+def import_methylation_data(contig_list, sample_CX_data_file, required_coverage):
 
     '''import the context specific methylation data for a given sample and specified contigs'''
 
@@ -160,7 +163,7 @@ def import_methylation_data(contig_list, sample_CX_data_file):
 
     for i in contig_list:
         contig_count += 1
-        print("Processing contig", contig_count)
+        #print("Processing contig", contig_count)
         coordinate_list = []
         strand_list = []
         methylated_list = []
@@ -170,22 +173,96 @@ def import_methylation_data(contig_list, sample_CX_data_file):
         for j in methylated_coords_data:
             split_data = j.split("\t")
             if split_data[0] == i:
-                coordinate_list.append(int(split_data[1]))
-                strand_list.append(split_data[2])
-                methylated_list.append(int(split_data[3]))
-                unmethylated_list.append(int(split_data[4]))
-                context_list.append(split_data[5])
-                trinucleotide_sequence_list.append(split_data[6].rstrip("\n"))
+                if int(split_data[3]) + int(split_data[4]) >= required_coverage:
+                    coordinate_list.append(int(split_data[1]))
+                    strand_list.append(split_data[2])
+                    methylated_list.append(int(split_data[3]))
+                    unmethylated_list.append(int(split_data[4]))
+                    context_list.append(split_data[5])
+                    trinucleotide_sequence_list.append(split_data[6].rstrip("\n"))
         data_list = [coordinate_list, strand_list, methylated_list, unmethylated_list, context_list, trinucleotide_sequence_list]
         methylated_coords_data_dict[i] = data_list
 
+    return methylated_coords_data_dict
+
+def import_methylation_data2(contig_list, sample_CX_data_file, required_coverage):
+    '''import the context specific methylation data for a given sample and specified contigs'''
+    methylated_coords_data_handle = open(sample_CX_data_file, "r")
+    methylated_coords_data = methylated_coords_data_handle.readlines()
+    methylated_coords_data_handle.close()
+    methylated_coords_data_dict = {}
+    for i in contig_list:
+        methylated_coords_data_dict[i] = [[],[],[],[],[],[]]
+    icount = 0
+    start = time.time()
+    #print("starting data import:", start)
+    #print("number of lines to import:", len(methylated_coords_data))
+    hundreth = len(methylated_coords_data)//100
+    increment = int(hundreth)
+    percent = 0
+    #print("***", percent, "percent complete ***")
+    for i in methylated_coords_data:
+        # print(icount)
+        icount += 1
+        split_data = i.split("\t")
+        contig = split_data[0]
+        if int(split_data[3]) + int(split_data[4]) >= required_coverage:
+            methylated_coords_data_dict[contig][0] = methylated_coords_data_dict[contig][0] + [int(split_data[1])] # coordinate
+            methylated_coords_data_dict[contig][1] = methylated_coords_data_dict[contig][1] + [(split_data[2])] # strand
+            methylated_coords_data_dict[contig][2] = methylated_coords_data_dict[contig][2] + [(int(split_data[3]))] # methylated count
+            methylated_coords_data_dict[contig][3] = methylated_coords_data_dict[contig][3] + [(int(split_data[4]))] # unmethylated count
+            methylated_coords_data_dict[contig][4] = methylated_coords_data_dict[contig][4] + [(split_data[5])] # context
+            methylated_coords_data_dict[contig][5] = methylated_coords_data_dict[contig][5] + [(split_data[6].rstrip("\n"))] # trinucleotide sequence
+        if icount == increment:
+            percent += int(100/100)
+            now = time.time()
+            #print("***", percent, "percent complete [", now-start, "seconds elapsed ] ***")
+            increment += hundreth
+    return methylated_coords_data_dict
+
+def import_methylation_data3(input_file_path):
+    '''import the context specific methylation data for a given sample and specified contigs'''
+    contig_list = import_contig_list("/media/kevlab/projects/helicoverpa_epigenetics/data/200305/coverageStatsTest/contigs.txt")
+    required_coverage = 20
+    methylated_coords_data_handle = open(input_file_path, "r")
+    methylated_coords_data = methylated_coords_data_handle.readlines()
+    methylated_coords_data_handle.close()
+    methylated_coords_data_dict = {} # this is where the methylation data for a given sample will be stored (methylated and unmethylated counts)
+    log_file = open("log_file.txt", "a+")
+    log_file.write('{0}/{1}/{2}\t{3}:{4}'.format(time.localtime()[2], time.localtime()[1], time.localtime()[0], time.localtime()[3], time.localtime()[4])+"\t*** Started processing "+ input_file_path+" ***\n")
+    log_file.close()
+    contig_count = 0
+    for i in contig_list:
+        contig_count += 1
+        print("Processing contig", contig_count, "("+input_file_path+")")
+        coordinate_list = []
+        strand_list = []
+        methylated_list = []
+        unmethylated_list = []
+        context_list = []
+        trinucleotide_sequence_list = []
+        for j in methylated_coords_data:
+            split_data = j.split("\t")
+            if split_data[0] == i:
+                if int(split_data[3]) + int(split_data[4]) >= required_coverage: # required coverage
+                    coordinate_list.append(int(split_data[1]))
+                    strand_list.append(split_data[2])
+                    methylated_list.append(int(split_data[3]))
+                    unmethylated_list.append(int(split_data[4]))
+                    context_list.append(split_data[5])
+                    trinucleotide_sequence_list.append(split_data[6].rstrip("\n"))
+        data_list = [coordinate_list, strand_list, methylated_list, unmethylated_list, context_list, trinucleotide_sequence_list]
+        methylated_coords_data_dict[i] = data_list
+    log_file = open("log_file.txt", "a+")
+    log_file.write('{0}/{1}/{2}\t{3}:{4}'.format(time.localtime()[2], time.localtime()[1], time.localtime()[0], time.localtime()[3], time.localtime()[4])+"\t*** Finished processing "+ input_file_path+" ***\n")
+    log_file.close()
     return methylated_coords_data_dict
 
 def get_feature_stats(contig_cpg_coordinate_dict, contig_feature_coordinate_dict, contig_sequence_dict):
     """extract gene stats (i.e. size, cpg count, cpg percent, cpg coordinates)"""
     contig_feature_stats_dict = {}
     for i in contig_cpg_coordinate_dict:
-        print(i)
+        #print(i)
         number_of_cpg = []
         cpg_coord = []
         feature_cpg_coord_dict = {}
@@ -201,14 +278,14 @@ def get_feature_stats(contig_cpg_coordinate_dict, contig_feature_coordinate_dict
                     if int(contig_cpg_coordinate_dict[i][0][k]) >= feature_start_coordinate:
                         feature_cpg_count += 1
                         feature_cpg_coord.append(contig_cpg_coordinate_dict[i][0][k])
-                        print(i,"\t",contig_cpg_coordinate_dict[i][0][k],"\t", contig_sequence_dict[i][contig_cpg_coordinate_dict[i][0][k]:contig_cpg_coordinate_dict[i][1][k]])
+                        #print(i,"\t",contig_cpg_coordinate_dict[i][0][k],"\t", contig_sequence_dict[i][contig_cpg_coordinate_dict[i][0][k]:contig_cpg_coordinate_dict[i][1][k]])
             number_of_cpg.append(feature_cpg_count)
             cpg_coord.append(feature_cpg_coord)
             feature_cpg_coord_dict[feature_start_coordinate] = feature_cpg_coord
             size_of_feature.append(feature_end_coordinate-(feature_start_coordinate-1))
             if feature_end_coordinate-feature_start_coordinate > 0:
                 feature_percent_cpg.append(100*(feature_cpg_count/(feature_end_coordinate-feature_start_coordinate)))
-            print("feature_cpg_count:", feature_cpg_count)
+            #print("feature_cpg_count:", feature_cpg_count)
         feature_stats = [feature_cpg_coord_dict, number_of_cpg, size_of_feature, feature_percent_cpg]
         contig_feature_stats_dict[i] = feature_stats
     return contig_feature_stats_dict
@@ -218,7 +295,7 @@ def get_sample_methylation_stats(sample_methylation_dict, required_coverage, con
     contig_count = 0
     for i in sample_methylation_dict: # contig name
         contig_count += 1
-        print("Processing contig", contig_count, "Contig name:", i)
+        #print("Processing contig", contig_count, "Contig name:", i)
         contig_coordinate = []
         contig_percent_data = []
         contig_methylated_count_data = []
@@ -254,18 +331,21 @@ def get_sample_methylation_stats(sample_methylation_dict, required_coverage, con
         contig_cpg_counts_methylation_list = contig_totals_data
         sample_methylation_stats = [contig_cpg_coverage_threshold_list, contig_cpg_counts_methylation_list,  contig_cpg_coordinate_list, contig_cpg_percent_methylation_list, contig_cpg_methylated_count_list, contig_cpg_unmethylated_count_list]
         contig_sample_methylation_stats_dict[i] = sample_methylation_stats
-        if contig_cumulative_methylated+contig_cumulative_unmethylated > 0: # discounts contigs without any cytosines that pass the threshold!
-            print(100*(contig_pass_coverage_threshold/(contig_pass_coverage_threshold+contig_fail_coverage_threshold)), "percent of", context, "cytosines pass coverage threshold!")
-            print("Total methylated", context+"'s:", contig_cumulative_methylated)
-            print("Total unmethylated", context+"'s:", contig_cumulative_unmethylated)
-            print("Overall methylation percentage for passing", context, "cytosines is", 100*(contig_cumulative_methylated/(contig_cumulative_methylated+contig_cumulative_unmethylated)))
-        else:
-            print("No data for this contig!")
+#        if contig_cumulative_methylated+contig_cumulative_unmethylated > 0: # discounts contigs without any cytosines that pass the threshold!
+#            #print(100*(contig_pass_coverage_threshold/(contig_pass_coverage_threshold+contig_fail_coverage_threshold)), "percent of", context, "cytosines pass coverage threshold!")
+#            #print("Total methylated", context+"'s:", contig_cumulative_methylated)
+#            #print("Total unmethylated", context+"'s:", contig_cumulative_unmethylated)
+#            #print("Overall methylation percentage for passing", context, "cytosines is", 100*(contig_cumulative_methylated/(contig_cumulative_methylated+contig_cumulative_unmethylated)))
+#        else:
+#            #print("No data for this contig!")
     return contig_sample_methylation_stats_dict
 
 def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_dict):
     contig_feature_cpg_coordinate_methylation_dict = {}
+    contig_count = 0
     for i in contig_sample_methylation_stats_dict:
+        contig_count +=1
+        #print("Processing contig", contig_count, "Contig name:", i)
         coordinate_list = contig_sample_methylation_stats_dict[i][2]
         percent_list = contig_sample_methylation_stats_dict[i][3]
         methylated_list = contig_sample_methylation_stats_dict[i][4] # doesn't exist yet!
@@ -282,14 +362,14 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
             percent = []
             methylated = []
             unmethylated = []
-            print("Start:", start, "End:", end, "Strand:", strand)
+            #print("Start:", start, "End:", end, "Strand:", strand)
             for k in range(len(coordinate_list)):
                 if coordinate_list[k] >= start and coordinate_list[k] <= end: # i.e. within feature
                     coordinate.append(coordinate_list[k])
                     methylated.append(methylated_list[k])
                     unmethylated.append(unmethylated_list[k])
                     percent.append(percent_list[k])
-                    print("coordinate:", coordinate_list[k], "percent:", percent_list[k], "methylated:", methylated_list[k], "unmethylated:", unmethylated_list[k])
+                    #print("coordinate:", coordinate_list[k], "percent:", percent_list[k], "methylated:", methylated_list[k], "unmethylated:", unmethylated_list[k])
             if strand == "+" or strand == "-":
                 feature_cpg_coordinate_dict[i+"."+str(start)] = [start, end, strand, coordinate, percent, methylated, unmethylated]
             elif strand == ".": # i.e. intergenic region
@@ -317,8 +397,8 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
                             threeprime_feature_percent.append(percent[l])
                             threeprime_feature_methylated.append(methylated[l])
                             threeprime_feature_unmethylated.append(unmethylated[l])
-                        else:
-                            print("Coordinate not found!")
+#                        else:
+#                            #print("Coordinate not found!")
                     feature_cpg_coordinate_dict[i+"."+str(start)] = [[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], [fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
                 else:
                     fiveprime_feature_start = start
@@ -344,8 +424,8 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
                             threeprime_feature_percent.append(percent[l])
                             threeprime_feature_methylated.append(methylated[l])
                             threeprime_feature_unmethylated.append(unmethylated[l])
-                    else:
-                        print("Coordinate not found!")
+#                    else:
+#                        #print("Coordinate not found!")
                     feature_cpg_coordinate_dict[i+"."+str(start)] = [[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], [fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
         contig_feature_cpg_coordinate_methylation_dict[i] = feature_cpg_coordinate_dict
     return contig_feature_cpg_coordinate_methylation_dict
@@ -387,7 +467,7 @@ def gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict, zer
     for i in contig_gene_cpg_coordinate_methylation_dict:
         gene_dict = {}
         for j in contig_gene_cpg_coordinate_methylation_dict[i]:
-            print(contig_gene_cpg_coordinate_methylation_dict[i][j][0], contig_gene_cpg_coordinate_methylation_dict[i][j][1], contig_gene_cpg_coordinate_methylation_dict[i][j][2])
+            #print(contig_gene_cpg_coordinate_methylation_dict[i][j][0], contig_gene_cpg_coordinate_methylation_dict[i][j][1], contig_gene_cpg_coordinate_methylation_dict[i][j][2])
             strand = contig_gene_cpg_coordinate_methylation_dict[i][j][2]
             start = contig_gene_cpg_coordinate_methylation_dict[i][j][0]
             end = contig_gene_cpg_coordinate_methylation_dict[i][j][1]
@@ -406,15 +486,15 @@ def gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict, zer
                     zero = start
                 elif zeropoint == "end":
                     zero = end
-                else:
-                    print("Zeropoint error!")
+#                else:
+#                    #print("Zeropoint error!")
             elif strand == "-":
                 if zeropoint == "start":
                     zero = newstart
                 elif zeropoint == "end":
                     zero = newend
-                else:
-                    print("Zeropoint error!")
+#                else:
+#                    #print("Zeropoint error!")
             cpg_position = []
             cpg_percent = []
             cpg_methylated = []
@@ -441,8 +521,8 @@ def gene_coordinate_to_position(contig_gene_cpg_coordinate_methylation_dict, zer
                     cpg_percent.append(percent)
                     cpg_methylated.append(methylated)
                     cpg_unmethylated.append(unmethylated)
-                else:
-                    print("Error!")
+#                else:
+#                    #print("Error!")
             gene_dict[j] = [strand, start, end, cpg_position, cpg_percent, cpg_methylated, cpg_unmethylated]
         contig_gene_cpg_position_methylation_dict[i] = gene_dict
     return contig_gene_cpg_position_methylation_dict
@@ -484,7 +564,7 @@ def position_methylation_stat_tally(contig_min_position_dict, contig_max_positio
         for j in contig_feature_position_context_methylation_dict[i]:
             if len(contig_feature_position_context_methylation_dict[i][j][3]) > 0:
                 for k in range(len(contig_feature_position_context_methylation_dict[i][j][3])):
-                    print("position:", contig_feature_position_context_methylation_dict[i][j][3][k])
+                    #print("position:", contig_feature_position_context_methylation_dict[i][j][3][k])
                     position = contig_feature_position_context_methylation_dict[i][j][3][k]
                     position_stat = contig_feature_position_context_methylation_dict[i][j][statindex][k]
                     position_stat_list = position_stat_tally_dict[position]
