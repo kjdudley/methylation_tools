@@ -430,6 +430,64 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
         contig_feature_cpg_coordinate_methylation_dict[i] = feature_cpg_coordinate_dict
     return contig_feature_cpg_coordinate_methylation_dict
 
+def contig_to_feature2(contig_sample_methylation_stats_dict, feature_annotation_dict):
+    """takes a set of chromosome/contig methylation data and partitions into
+    features (e.g. gene, exons) plus flanking regions"""
+    contig_feature_cpg_coordinate_methylation_dict = {}
+    contig_count = 0
+    for i in contig_sample_methylation_stats_dict:
+        contig_count +=1
+        #print("Processing contig", contig_count, "Contig name:", i)
+        coordinate_list = contig_sample_methylation_stats_dict[i][2]
+        percent_list = contig_sample_methylation_stats_dict[i][3]
+        methylated_list = contig_sample_methylation_stats_dict[i][4]
+        unmethylated_list = contig_sample_methylation_stats_dict[i][5]
+        feature_cpg_coordinate_dict = {}
+        for j in range(len(feature_annotation_dict[i][0])): # start coordinate list
+            if j == 0:
+                previous_end = 0
+            else:
+                previous_end = end
+            if j == len(feature_annotation_dict[i][0])-1: # i.e the last j
+                next_start = 400000000 # a very large number!! Change this if contig/chromosome even larger!
+            else:
+                next_start = int(feature_annotation_dict[i][0][j+1])
+            start = int(feature_annotation_dict[i][0][j]) # feature start coordinate
+            end = int(feature_annotation_dict[i][1][j]) # feature end coordinate
+            if len(feature_annotation_dict[i]) == 3:
+                strand = feature_annotation_dict[i][2][j] # strand
+            else:
+                strand = "."
+            coordinate = []
+            percent = []
+            methylated = []
+            unmethylated = []
+            feature = []
+            #print("Start:", start, "End:", end, "Strand:", strand)
+            for k in range(len(coordinate_list)):
+                if coordinate_list[k] >= start and coordinate_list[k] <= end: # i.e. within feature
+                    coordinate.append(coordinate_list[k])
+                    methylated.append(methylated_list[k])
+                    unmethylated.append(unmethylated_list[k])
+                    percent.append(percent_list[k])
+                    feature.append("f") # feature
+                elif coordinate_list[k] < start and coordinate_list[k] > previous_end: # i.e. upstream of feature:
+                    coordinate.append(coordinate_list[k])
+                    methylated.append(methylated_list[k])
+                    unmethylated.append(unmethylated_list[k])
+                    percent.append(percent_list[k])
+                    feature.append("u") # upstream
+                elif coordinate_list[k] > end and coordinate_list[k] < next_start: # i.e. downstream of feature:
+                    coordinate.append(coordinate_list[k])
+                    methylated.append(methylated_list[k])
+                    unmethylated.append(unmethylated_list[k])
+                    percent.append(percent_list[k])
+                    feature.append("d") # downstream
+            feature_cpg_coordinate_dict[i+"."+str(start)] = [start, end, \
+                strand, coordinate, percent, methylated, unmethylated, feature_type]
+        contig_feature_cpg_coordinate_methylation_dict[i] = feature_cpg_coordinate_dict
+    return contig_feature_cpg_coordinate_methylation_dict
+
 def add_upstream_downstream_regions(contig_gene_cpg_coordinate_methylation_dict, contig_intergene_cpg_coordinate_methylation_dict):
     contig_gene_and_flanking_sequences_cpg_coordinate_methylation_dict = {}
     for i in contig_gene_cpg_coordinate_methylation_dict:
