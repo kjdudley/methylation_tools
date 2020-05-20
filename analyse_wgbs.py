@@ -69,6 +69,15 @@ gene_annotation = import_gff_data(contig_list, "gene")
 print("*** extracting intergene data ***")
 intergene_annotation = import_intergene_coordinates(gene_annotation, contig_sequence_dict) # find non genic coordinates in gff format (1-based)
 
+### GET EXON ANNOTATION
+print("*** importing gene annotation data ***")
+print(path_to_data+"/"+gff)
+exon_annotation = import_gff_data(contig_list, "exon")
+
+### GET INTEREXON ANNOTATION
+print("*** extracting intergene data ***")
+interexon_annotation = import_intergene_coordinates(exon_annotation, contig_sequence_dict) # find non exonic coordinates in gff format (1-based)
+
 ### MARK CPG COORDINATES IN IMPORTED CONTIGS ###
 # cpg_coordinates = get_coordinates(contig_sequence_dict, "CG")
 # check that it works!
@@ -82,160 +91,293 @@ intergene_annotation = import_intergene_coordinates(gene_annotation, contig_sequ
 ### ANALYSE SAMPLES ###
 required_coverage = 20
 cg_context = "CG"
-chg_context = "CHG"
-chh_context = "CHH"
+#chg_context = "CHG"
+#chh_context = "CHH"
 print("*** starting sample processing ***")
 sample_methylation_dict = {}
 for sample in range(len(sample_methylation_data)):
     sample_number = sample+1
     print("*** Processing sample", sample_number, "***")
     sample_methylation_dict[str(sample_number)+"_"+cg_context+"_contig_methylation_stats_dict"] = get_sample_methylation_stats(sample_methylation_data[sample], required_coverage, cg_context)
-    sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"] = get_sample_methylation_stats(sample_methylation_data[sample], required_coverage, chg_context)
-    sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"] = get_sample_methylation_stats(sample_methylation_data[sample], required_coverage, chh_context)
+#    sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"] = get_sample_methylation_stats(sample_methylation_data[sample], required_coverage, chg_context)
+#    sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"] = get_sample_methylation_stats(sample_methylation_data[sample], required_coverage, chh_context)
 
 # group data by gene and intergene (i.e. feature) coordinates
+#print("*** grouping data by feature ***")
+#sample_feature_methylation_stats_data_dict = {}
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+cg_context+"_contig_methylation_stats_dict"], gene_annotation, "feature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"], gene_annotation, "feature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"], gene_annotation, "feature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_intergene_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+cg_context+"_contig_methylation_stats_dict"], intergene_annotation, "interfeature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_intergene_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"], intergene_annotation, "interfeature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_intergene_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"], intergene_annotation, "interfeature")
+
+# group data by exon and interexon (i.e. feature) coordinates
 print("*** grouping data by feature ***")
 sample_feature_methylation_stats_data_dict = {}
 for sample in range(len(sample_methylation_data)):
     sample_number = sample+1
     print("*** Processing sample", sample_number, "***")
-    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_methylation_stats_dict"] = contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+cg_context+"_contig_methylation_stats_dict"], gene_annotation)
-    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_methylation_stats_dict"] = contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"], gene_annotation)
-    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_methylation_stats_dict"] = contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"], gene_annotation)
-    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_intergene_methylation_stats_dict"] = contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+cg_context+"_contig_methylation_stats_dict"], intergene_annotation)
-    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_intergene_methylation_stats_dict"] = contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"], intergene_annotation)
-    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_intergene_methylation_stats_dict"] = contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"], intergene_annotation)
+    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_methylation_stats_dict"] \
+= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+cg_context+"_contig_methylation_stats_dict"], exon_annotation, "feature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"], exon_annotation, "feature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"], exon_annotation, "feature")
+    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_interexon_methylation_stats_dict"] \
+= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+cg_context+"_contig_methylation_stats_dict"], interexon_annotation, "interfeature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_interexon_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chg_context+"_contig_methylation_stats_dict"], interexon_annotation, "interfeature")
+#    sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_interexon_methylation_stats_dict"] \
+#= contig_to_feature(sample_methylation_dict[str(sample_number)+"_"+chh_context+"_contig_methylation_stats_dict"], interexon_annotation, "interfeature")
 
-# add flanking regions to gene coordinate data (upstream and downstream)
+# add flanking regions to coordinate data (upstream and downstream)
+#print("*** adding flanking regions ***")
+#sample_gene_plus_flanking_methylation_stats_data_dict = {}
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_stats_dict"] = \
+#add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_methylation_stats_dict"], \
+#sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_intergene_methylation_stats_dict"])
+#    sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_stats_dict"] = \
+#add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_methylation_stats_dict"], \
+#sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_intergene_methylation_stats_dict"])
+#    sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_stats_dict"] = \
+#add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_methylation_stats_dict"], \
+#sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_intergene_methylation_stats_dict"])
+
 print("*** adding flanking regions ***")
-sample_gene_plus_flanking_methylation_stats_data_dict = {}
+sample_exon_plus_flanking_methylation_stats_data_dict = {}
 for sample in range(len(sample_methylation_data)):
     sample_number = sample+1
     print("*** Processing sample", sample_number, "***")
-    sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_stats_dict"] = \
-add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_methylation_stats_dict"], sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_intergene_methylation_stats_dict"])
-    sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_stats_dict"] = \
-add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_methylation_stats_dict"], sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_intergene_methylation_stats_dict"])
-    sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_stats_dict"] = \
-add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_methylation_stats_dict"], sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_intergene_methylation_stats_dict"])
+    sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_stats_dict"] = \
+add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_methylation_stats_dict"], \
+sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_interexon_methylation_stats_dict"])
+#    sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_stats_dict"] = \
+#add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_methylation_stats_dict"], \
+#sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_interexon_methylation_stats_dict"])
+#    sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_stats_dict"] = \
+#add_upstream_downstream_regions(sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_methylation_stats_dict"], \
+#sample_feature_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_interexon_methylation_stats_dict"])
 
 # convert coordinates to positions
+#print("*** converting coordinates to position values ***")
+#sample_gene_plus_flanking_methylation_position_stats_data_dict = {}
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"] = \
+#gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_stats_dict"], "start")
+#    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"] = \
+#gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_stats_dict"], "start")
+#    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_start_stats_dict"] = \
+#gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_stats_dict"], "start")
+#    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"] = \
+#gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_stats_dict"], "end")
+#    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"] = \
+#gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_stats_dict"], "end")
+#    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_end_stats_dict"] = \
+#gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_stats_dict"], "end")
+
 print("*** converting coordinates to position values ***")
-sample_gene_plus_flanking_methylation_position_stats_data_dict = {}
+sample_exon_plus_flanking_methylation_position_stats_data_dict = {}
 for sample in range(len(sample_methylation_data)):
     sample_number = sample+1
     print("*** Processing sample", sample_number, "***")
-    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"] = \
-gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_stats_dict"], "start")
-    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"] = \
-gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_stats_dict"], "start")
-    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_start_stats_dict"] = \
-gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_stats_dict"], "start")
-    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"] = \
-gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_stats_dict"], "end")
-    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"] = \
-gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_stats_dict"], "end")
-    sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_end_stats_dict"] = \
-gene_coordinate_to_position(sample_gene_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_stats_dict"], "end")
+    sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"] = \
+gene_coordinate_to_position(sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_stats_dict"], "start")
+#    sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"] = \
+#gene_coordinate_to_position(sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_stats_dict"], "start")
+#    sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_position_start_stats_dict"] = \
+#gene_coordinate_to_position(sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_stats_dict"], "start")
+    sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"] = \
+gene_coordinate_to_position(sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_stats_dict"], "end")
+#    sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"] = \
+#gene_coordinate_to_position(sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_stats_dict"], "end")
+#    sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_position_end_stats_dict"] = \
+#gene_coordinate_to_position(sample_exon_plus_flanking_methylation_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_stats_dict"], "end")
 
 # find max and min positions
+#print("*** finding max and min values ***")
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict = {}
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict = {}
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"] = \
+#get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"])
+#    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"] = \
+#get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"])
+#    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"] = \
+#get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_start_stats_dict"])
+#    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"] = \
+#get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"])
+#    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"] = \
+#get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"])
+#    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"] = \
+#get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"])
+#    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"] = \
+#get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"])
+#    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"] = \
+#get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"])
+#    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"] = \
+#get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_end_stats_dict"])
+#    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"] = \
+#get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"])
+#    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"] = \
+#get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"])
+#    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"] = \
+#get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"])
+
 print("*** finding max and min values ***")
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict = {}
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict = {}
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict = {}
+sample_exon_plus_flanking_methylation_min_position_stats_data_dict = {}
 for sample in range(len(sample_methylation_data)):
     sample_number = sample+1
     print("*** Processing sample", sample_number, "***")
-    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"] = \
-get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"])
-    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"] = \
-get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"])
-    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"] = \
-get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_start_stats_dict"])
-    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"] = \
-get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"])
-    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"] = \
-get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"])
-    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"] = \
-get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"])
-    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"] = \
-get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"])
-    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"] = \
-get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"])
-    sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"] = \
-get_max_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_end_stats_dict"])
-    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"] = \
-get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"])
-    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"] = \
-get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"])
-    sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"] = \
-get_min_cpg_position(sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"])
+    sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"] = \
+get_max_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"])
+#    sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"] = \
+#get_max_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"])
+#    sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"] = \
+#get_max_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_position_start_stats_dict"])
+    sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_start_stats_dict"] = \
+get_min_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"])
+#    sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_min_position_start_stats_dict"] = \
+#get_min_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"], \
+#sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"])
+#    sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_min_position_start_stats_dict"] = \
+#get_min_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_position_start_stats_dict"], \
+#sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"])
+    sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"] = \
+get_max_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"])
+#    sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"] = \
+#get_max_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"])
+#    sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"] = \
+#get_max_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_position_end_stats_dict"])
+    sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_end_stats_dict"] = \
+get_min_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"])
+#    sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_min_position_end_stats_dict"] = \
+#get_min_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"], \
+#sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"])
+#    sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_min_position_end_stats_dict"] = \
+#get_min_cpg_position(sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_position_end_stats_dict"], \
+#sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"])
 
 # create percent cg dictionary entry for each position between min and max
-print("*** counting cg methylation position calls ***")
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict = {}
-for sample in range(len(sample_methylation_data)):
-    sample_number = sample+1
-    print("*** Processing sample", sample_number, "***")
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "percent")
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "methylated_count")
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "unmethylated_count")
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "percent")
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "methylated_count")
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "unmethylated_count")
+#print("*** counting cg methylation position calls ***")
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict = {}
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "percent")
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "methylated_count")
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "unmethylated_count")
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "percent")
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "methylated_count")
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "unmethylated_count")
 
-print("*** counting chg methylation position calls ***")
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict = {}
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict = {}
 for sample in range(len(sample_methylation_data)):
     sample_number = sample+1
     print("*** Processing sample", sample_number, "***")
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "percent")
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "methylated_count")
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "unmethylated_count")
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "percent")
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "methylated_count")
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
-sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
-sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "unmethylated_count")
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"] \
+= position_methylation_stat_tally(\
+sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_start_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"], \
+sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"], "percent")
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"] \
+= position_methylation_stat_tally(\
+sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_start_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"], \
+sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"], "methylated_count")
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"] \
+= position_methylation_stat_tally(\
+sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_start_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_start_stats_dict"], \
+sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_start_stats_dict"], "unmethylated_count")
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"] \
+= position_methylation_stat_tally(\
+sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_end_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"], \
+sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"], "percent")
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"] \
+= position_methylation_stat_tally(\
+sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_end_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"], \
+sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"], "methylated_count")
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"] \
+= position_methylation_stat_tally(\
+sample_exon_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_min_position_end_stats_dict"], \
+sample_exon_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_position_end_stats_dict"], \
+sample_exon_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_position_end_stats_dict"], "unmethylated_count")
+
+#print("*** counting chg methylation position calls ***")
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict = {}
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "percent")
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "methylated_count")
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_start_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_start_stats_dict"], "unmethylated_count")
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "percent")
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "methylated_count")
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"] = position_methylation_stat_tally(\
+#sample_gene_plus_flanking_methylation_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_min_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_max_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_position_end_stats_dict"], \
+#sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "unmethylated_count")
 
 #print("*** counting chh methylation position calls ***")
 #sample_gene_plus_flanking_chh_methylation_max_to_min_position_stats_data_dict = {}
@@ -268,33 +410,47 @@ sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number
 #sample_gene_plus_flanking_methylation_position_stats_data_dict[str(sample_number)+"_"+chh_context+"_gene_plus_flanking_methylation_position_end_stats_dict"], "unmethylated_count")
 
 # add length, position, methylated_count, unmethylated_count, median and max data
-print("*** calculating cg position methylation statistics ***")
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list = []
-for sample in range(len(sample_methylation_data)):
-    sample_number = sample+1
-    print("*** Processing sample", sample_number, "***")
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"], \
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"], \
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"]))
-    sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"], \
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"], \
-sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"]))
+#print("*** calculating cg position methylation statistics ***")
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list = []
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"], \
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"], \
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"]))
+#    sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"], \
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"], \
+#sample_gene_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"]))
 
-print("*** calculating chg position methylation statistics ***")
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_summary_stats_data_list = []
+print("*** calculating cg position methylation statistics ***")
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list = []
 for sample in range(len(sample_methylation_data)):
     sample_number = sample+1
     print("*** Processing sample", sample_number, "***")
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"], \
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"], \
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"]))
-    sample_gene_plus_flanking_chg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"], \
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"], \
-sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"]))
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"], \
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"], \
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"]))
+    sample_exon_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"], \
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"], \
+sample_exon_plus_flanking_cg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+cg_context+"_exon_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"]))
+
+#print("*** calculating chg position methylation statistics ***")
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_summary_stats_data_list = []
+#for sample in range(len(sample_methylation_data)):
+#    sample_number = sample+1
+#    print("*** Processing sample", sample_number, "***")
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_percent_stats_data_dict"], \
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_methylated_count_stats_data_dict"], \
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_start_unmethylated_count_stats_data_dict"]))
+#    sample_gene_plus_flanking_chg_methylation_max_to_min_position_summary_stats_data_list.append(position_methylation_stats_to_list(\
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_percent_stats_data_dict"], \
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_methylated_count_stats_data_dict"], \
+#sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[str(sample_number)+"_"+chg_context+"_gene_plus_flanking_methylation_max_to_min_position_end_unmethylated_count_stats_data_dict"]))
 
 #print("*** calculating chh position methylation statistics ***")
 #sample_gene_plus_flanking_chh_methylation_max_to_min_position_summary_stats_data_list = []
@@ -349,9 +505,9 @@ sample_gene_plus_flanking_chg_methylation_max_to_min_position_stats_data_dict[st
 print("*** plotting cg data ***")
 all_cpg_position_stats_plot_data = []
 plot_count = 0
-for i in sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list:
+for i in sample_exon_plus_flanking_cg_methylation_max_to_min_position_summary_stats_data_list:
     plot_count += 1
-    print("*** processing sample", sample_count, "***")
+    print("*** processing sample", plot_count, "***")
     sample_cpg_position_stats_plot_data = []
     x = []
     y = []
@@ -361,7 +517,7 @@ for i in sample_gene_plus_flanking_cg_methylation_max_to_min_position_summary_st
     u = []
     t = []
     a = []
-    for j in range(-3500,3500):
+    for j in range(-250,250): # change to -3500,3500 for gene data
         x.append(j)
         y.append(i[1][i[0].index(0)+j]) # collect number of values for selected positions
         z.append(i[2][i[0].index(0)+j]) # collect median values for selected positions

@@ -340,7 +340,7 @@ def get_sample_methylation_stats(sample_methylation_dict, required_coverage, con
 #            #print("No data for this contig!")
     return contig_sample_methylation_stats_dict
 
-def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_dict):
+def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_dict, feature_type):
     contig_feature_cpg_coordinate_methylation_dict = {}
     contig_count = 0
     for i in contig_sample_methylation_stats_dict:
@@ -354,7 +354,7 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
         for j in range(len(feature_annotation_dict[i][0])): # start coordinate list
             start = int(feature_annotation_dict[i][0][j])
             end = int(feature_annotation_dict[i][1][j])
-            if len(feature_annotation_dict[i]) == 3:
+            if len(feature_annotation_dict[i]) == 3 and feature_type == "feature":
                 strand = feature_annotation_dict[i][2][j]
             else:
                 strand = "."
@@ -372,7 +372,7 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
                     #print("coordinate:", coordinate_list[k], "percent:", percent_list[k], "methylated:", methylated_list[k], "unmethylated:", unmethylated_list[k])
             if strand == "+" or strand == "-":
                 feature_cpg_coordinate_dict[i+"."+str(start)] = [start, end, strand, coordinate, percent, methylated, unmethylated]
-            elif strand == ".": # i.e. intergenic region
+            else: # strand == ".": # i.e. intergenic region
                 if (end - (start-1))%2 == 0: #i.e. even number
                     fiveprime_feature_start = start
                     fiveprime_feature_end = int(start+((end-(start-1))/2))
@@ -398,9 +398,11 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
                             threeprime_feature_methylated.append(methylated[l])
                             threeprime_feature_unmethylated.append(unmethylated[l])
 #                        else:
-#                            #print("Coordinate not found!")
-                    feature_cpg_coordinate_dict[i+"."+str(start)] = [[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], [fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
-                else:
+#                            print("Coordinate not found!")
+                    feature_cpg_coordinate_dict[i+"."+str(start)] = \
+[[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], \
+[fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
+                else: # odd number
                     fiveprime_feature_start = start
                     fiveprime_feature_end = int(start+(((end-(start-1))-1)/2))
                     threeprime_feature_start = int(start+((((end-(start-1))-1)/2)+2)) # plus two instead of 1!
@@ -424,67 +426,11 @@ def contig_to_feature(contig_sample_methylation_stats_dict, feature_annotation_d
                             threeprime_feature_percent.append(percent[l])
                             threeprime_feature_methylated.append(methylated[l])
                             threeprime_feature_unmethylated.append(unmethylated[l])
-#                    else:
-#                        #print("Coordinate not found!")
-                    feature_cpg_coordinate_dict[i+"."+str(start)] = [[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], [fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
-        contig_feature_cpg_coordinate_methylation_dict[i] = feature_cpg_coordinate_dict
-    return contig_feature_cpg_coordinate_methylation_dict
-
-def contig_to_feature2(contig_sample_methylation_stats_dict, feature_annotation_dict):
-    """takes a set of chromosome/contig methylation data and partitions into
-    features (e.g. gene, exons) plus flanking regions"""
-    contig_feature_cpg_coordinate_methylation_dict = {}
-    contig_count = 0
-    for i in contig_sample_methylation_stats_dict:
-        contig_count +=1
-        #print("Processing contig", contig_count, "Contig name:", i)
-        coordinate_list = contig_sample_methylation_stats_dict[i][2]
-        percent_list = contig_sample_methylation_stats_dict[i][3]
-        methylated_list = contig_sample_methylation_stats_dict[i][4]
-        unmethylated_list = contig_sample_methylation_stats_dict[i][5]
-        feature_cpg_coordinate_dict = {}
-        for j in range(len(feature_annotation_dict[i][0])): # start coordinate list
-            if j == 0:
-                previous_end = 0
-            else:
-                previous_end = end
-            if j == len(feature_annotation_dict[i][0])-1: # i.e the last j
-                next_start = 400000000 # a very large number!! Change this if contig/chromosome even larger!
-            else:
-                next_start = int(feature_annotation_dict[i][0][j+1])
-            start = int(feature_annotation_dict[i][0][j]) # feature start coordinate
-            end = int(feature_annotation_dict[i][1][j]) # feature end coordinate
-            if len(feature_annotation_dict[i]) == 3:
-                strand = feature_annotation_dict[i][2][j] # strand
-            else:
-                strand = "."
-            coordinate = []
-            percent = []
-            methylated = []
-            unmethylated = []
-            feature = []
-            #print("Start:", start, "End:", end, "Strand:", strand)
-            for k in range(len(coordinate_list)):
-                if coordinate_list[k] >= start and coordinate_list[k] <= end: # i.e. within feature
-                    coordinate.append(coordinate_list[k])
-                    methylated.append(methylated_list[k])
-                    unmethylated.append(unmethylated_list[k])
-                    percent.append(percent_list[k])
-                    feature.append("f") # feature
-                elif coordinate_list[k] < start and coordinate_list[k] > previous_end: # i.e. upstream of feature:
-                    coordinate.append(coordinate_list[k])
-                    methylated.append(methylated_list[k])
-                    unmethylated.append(unmethylated_list[k])
-                    percent.append(percent_list[k])
-                    feature.append("u") # upstream
-                elif coordinate_list[k] > end and coordinate_list[k] < next_start: # i.e. downstream of feature:
-                    coordinate.append(coordinate_list[k])
-                    methylated.append(methylated_list[k])
-                    unmethylated.append(unmethylated_list[k])
-                    percent.append(percent_list[k])
-                    feature.append("d") # downstream
-            feature_cpg_coordinate_dict[i+"."+str(start)] = [start, end, \
-                strand, coordinate, percent, methylated, unmethylated, feature_type]
+                        else:
+#                            print("Coordinate not found!")
+#                    feature_cpg_coordinate_dict[i+"."+str(start)] = \
+[[fiveprime_feature_start, threeprime_feature_start], [fiveprime_feature_end, threeprime_feature_end], strand, [fiveprime_feature_coordinate, threeprime_feature_coordinate], \
+[fiveprime_feature_percent, threeprime_feature_percent], [fiveprime_feature_methylated, threeprime_feature_methylated], [fiveprime_feature_unmethylated, threeprime_feature_unmethylated]]
         contig_feature_cpg_coordinate_methylation_dict[i] = feature_cpg_coordinate_dict
     return contig_feature_cpg_coordinate_methylation_dict
 
@@ -502,6 +448,14 @@ def add_upstream_downstream_regions(contig_gene_cpg_coordinate_methylation_dict,
             combined_methylated_list = [] # placeholder
             combined_unmethylated_list = [] # placeholder
             for k in contig_intergene_cpg_coordinate_methylation_dict[i]:
+                upstream_coordinate_list = [] # placeholder
+                upstream_percent_list = [] # placeholder
+                upstream_methylated_list = [] # placeholder
+                upstream_unmethylated_list = [] # placeholder
+                downstream_coordinate_list = [] # placeholder
+                downstream_percent_list = [] # placeholder
+                downstream_methylated_list = [] # placeholder
+                downstream_unmethylated_list = [] # placeholder
                 if (contig_intergene_cpg_coordinate_methylation_dict[i][k][1][1]) + 1 == contig_gene_cpg_coordinate_methylation_dict[i][j][0]: # if intergene three_prime_feature_end + 1 equals gene start (must be upstream)
                     upstream_coordinate_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][3][1]
                     upstream_percent_list = contig_intergene_cpg_coordinate_methylation_dict[i][k][4][1]
@@ -516,7 +470,9 @@ def add_upstream_downstream_regions(contig_gene_cpg_coordinate_methylation_dict,
             combined_percent_list = upstream_percent_list + gene_percent_list + downstream_percent_list
             combined_methylated_list = upstream_methylated_list + gene_methylated_list + downstream_methylated_list
             combined_unmethylated_list = upstream_unmethylated_list + gene_unmethylated_list + downstream_unmethylated_list
-            gene_and_flanking_sequences_cpg_coordinate_methylation_dict[j] = [contig_gene_cpg_coordinate_methylation_dict[i][j][0], contig_gene_cpg_coordinate_methylation_dict[i][j][1], contig_gene_cpg_coordinate_methylation_dict[i][j][2], combined_coordinate_list, combined_percent_list, combined_methylated_list, combined_unmethylated_list]
+            gene_and_flanking_sequences_cpg_coordinate_methylation_dict[j] = \
+[contig_gene_cpg_coordinate_methylation_dict[i][j][0], contig_gene_cpg_coordinate_methylation_dict[i][j][1], contig_gene_cpg_coordinate_methylation_dict[i][j][2], \
+combined_coordinate_list, combined_percent_list, combined_methylated_list, combined_unmethylated_list]
         contig_gene_and_flanking_sequences_cpg_coordinate_methylation_dict[i] = gene_and_flanking_sequences_cpg_coordinate_methylation_dict
     return contig_gene_and_flanking_sequences_cpg_coordinate_methylation_dict
 
